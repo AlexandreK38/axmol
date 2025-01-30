@@ -23,7 +23,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
-package org.axmol.lib;
+package dev.axmol.lib;
 
 import android.app.Activity;
 import android.app.KeyguardManager;
@@ -46,7 +46,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 
-import org.axmol.lib.AxmolEngine.AxmolEngineListener;
+import dev.axmol.lib.AxmolEngine.AxmolEngineListener;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;

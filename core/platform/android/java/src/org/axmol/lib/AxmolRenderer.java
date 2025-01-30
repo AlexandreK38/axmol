@@ -47,9 +47,9 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
     private long mLastTickInNanoSeconds;
     private int mScreenWidth;
     private int mScreenHeight;
-
     private static boolean gNativeInitialized = false;
     private static boolean gNativeIsPaused = false;
+    private boolean mNativeInitCompleted = false;
 
     // ===========================================================
     // Constructors
@@ -77,9 +77,12 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
         AxmolRenderer.nativeInit(this.mScreenWidth, this.mScreenHeight);
         this.mLastTickInNanoSeconds = System.nanoTime();
 
+        boolean isColdStart = mNativeInitCompleted;
+        mNativeInitCompleted = true;
+
         if (gNativeInitialized) {
             // This must be from an OpenGL context loss
-            nativeOnContextLost();
+            nativeOnContextLost(isColdStart);
         } else {
             gNativeInitialized = true;
         }
@@ -125,10 +128,11 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
     private static native boolean nativeKeyEvent(final int keyCode,boolean isPressed);
     private static native void nativeRender();
     private static native void nativeInit(final int width, final int height);
-    private static native void nativeOnContextLost();
+    private static native void nativeOnContextLost(final boolean isColdStart);
     private static native void nativeOnSurfaceChanged(final int width, final int height);
     private static native void nativeOnPause();
     private static native void nativeOnResume();
+    private static native void nativeOnColdStart();
 
     public void handleActionDown(final int id, final float x, final float y) {
         AxmolRenderer.nativeTouchesBegin(id, x, y);
@@ -169,9 +173,16 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
     }
 
     public void handleOnResume() {
+<<<<<<< HEAD
+        if (mIsPaused || mNextResumeAfterColdStart) {
+            AxmolRenderer.nativeOnResume();
+            mIsPaused = false;
+            mNextResumeAfterColdStart = false;
+=======
         if (gNativeIsPaused) {
             AxmolRenderer.nativeOnResume();
             gNativeIsPaused = false;
+>>>>>>> dev
         }
     }
 
