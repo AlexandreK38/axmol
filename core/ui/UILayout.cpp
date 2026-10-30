@@ -96,7 +96,7 @@ void Layout::onEnter()
     {
         _clippingStencil->onEnter();
     }
-    _doLayoutDirty     = true;
+    requestLayoutUpdate();
     _clippingRectDirty = true;
 }
 
@@ -164,7 +164,7 @@ void Layout::addChild(Node* child, int zOrder, int tag)
     }
     child->setGlobalZOrder(_globalZOrder);
     Widget::addChild(child, zOrder, tag);
-    _doLayoutDirty = true;
+    requestLayoutUpdate();
 }
 
 void Layout::addChild(Node* child, int zOrder, std::string_view name)
@@ -175,25 +175,25 @@ void Layout::addChild(Node* child, int zOrder, std::string_view name)
     }
     child->setGlobalZOrder(_globalZOrder);
     Widget::addChild(child, zOrder, name);
-    _doLayoutDirty = true;
+    requestLayoutUpdate();
 }
 
 void Layout::removeChild(Node* child, bool cleanup)
 {
     Widget::removeChild(child, cleanup);
-    _doLayoutDirty = true;
+    requestLayoutUpdate();
 }
 
 void Layout::removeAllChildren()
 {
     Widget::removeAllChildren();
-    _doLayoutDirty = true;
+    requestLayoutUpdate();
 }
 
 void Layout::removeAllChildrenWithCleanup(bool cleanup)
 {
     Widget::removeAllChildrenWithCleanup(cleanup);
-    _doLayoutDirty = true;
+    requestLayoutUpdate();
 }
 
 bool Layout::isClippingEnabled() const
@@ -511,7 +511,7 @@ void Layout::onSizeChanged()
 {
     Widget::onSizeChanged();
     setStencilClippingSize(_contentSize);
-    _doLayoutDirty     = true;
+    requestLayoutUpdate();
     _clippingRectDirty = true;
     if (_backGroundImage)
     {
@@ -891,7 +891,7 @@ void Layout::setLayoutType(Type type)
             supplyTheLayoutParameterLackToChild(static_cast<Widget*>(child));
         }
     }
-    _doLayoutDirty = true;
+    requestLayoutUpdate();
 }
 
 Layout::Type Layout::getLayoutType() const
@@ -907,7 +907,13 @@ void Layout::forceDoLayout()
 
 void Layout::requestDoLayout()
 {
+    requestLayoutUpdate();
+}
+
+void Layout::requestLayoutUpdate()
+{
     _doLayoutDirty = true;
+    _director->requestRender(RenderReason::Geometry);
 }
 
 Vec2 Layout::getLayoutContentSize() const

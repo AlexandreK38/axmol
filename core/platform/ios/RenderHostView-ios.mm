@@ -356,11 +356,18 @@ static ax::Rect convertKeyboardRectToViewport(CGRect rect, CGSize viewSize)
     }
 }
 
+- (void)swapBuffers
+{
+    [self presentFrame];
+}
+
 #if defined(AX_USE_METAL)
-- (void)swapBuffers
-{}
+- (BOOL)presentFrame
+{
+    return YES;
+}
 #else
-- (void)swapBuffers
+- (BOOL)presentFrame
 {
     // IMPORTANT:
     // - preconditions
@@ -406,7 +413,8 @@ static ax::Rect convertKeyboardRectToViewport(CGRect rect, CGSize viewSize)
 
 #    endif  // __IPHONE_4_0
 
-    if (![context_ presentRenderbuffer:GL_RENDERBUFFER])
+    BOOL presented = [context_ presentRenderbuffer:GL_RENDERBUFFER];
+    if (!presented)
     {
         //         AXLOGD(@"Failed to swap renderbuffer in {}\n", __FUNCTION__);
     }
@@ -419,6 +427,7 @@ static ax::Rect convertKeyboardRectToViewport(CGRect rect, CGSize viewSize)
     // 1st instruction of the new main loop
     if (multiSampling_)
         glBindFramebuffer(GL_FRAMEBUFFER, [renderer_ msaaFrameBuffer]);
+    return presented;
 }
 
 - (unsigned int)convertPixelFormat:(int)pixelFormat

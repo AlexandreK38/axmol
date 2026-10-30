@@ -1,0 +1,26 @@
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath 'com.android.tools.build:gradle:8.11.1' }
+}
+apply plugin: 'com.android.application'
+android {
+    namespace 'dev.axmol.renderdemand'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'dev.axmol.renderdemand'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+    sourceSets.main {
+        manifest.srcFile 'AndroidManifest.xml'
+        java.srcDirs = ['src']
+        jniLibs.srcDirs = [providers.gradleProperty('nativeDir').get()]
+        assets.srcDirs = [providers.gradleProperty('assetsDir').get()]
+    }
+    buildTypes.debug { debuggable true }
+}
+dependencies {
+    implementation project(':engine')
+}

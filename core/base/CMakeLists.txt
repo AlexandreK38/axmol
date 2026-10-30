@@ -54,6 +54,8 @@ set(_AX_BASE_HEADER
   base/EventController.h
   base/RefPtr.h
   base/Director.h
+  base/RenderActivity.h
+  base/RenderDemand.h
   base/EventListenerFocus.h
   base/UserDefault.h
   base/Config.h
@@ -92,6 +94,8 @@ set(_AX_BASE_SRC
   base/Data.cpp
   base/NinePatchImageParser.cpp
   base/Director.cpp
+  base/RenderActivity.cpp
+  base/RenderDemand.cpp
   base/Event.cpp
   base/EventAcceleration.cpp
   base/EventController.cpp

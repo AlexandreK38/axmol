@@ -164,6 +164,8 @@ GridBase::~GridBase()
 // properties
 void GridBase::setActive(bool active)
 {
+    if (_active != active)
+        Director::getInstance()->requestRender(RenderReason::Geometry);
     _active = active;
     if (!active)
     {
@@ -499,6 +501,9 @@ void Grid3D::setVertex(const Vec2& pos, const Vec3& vertex)
     AXASSERT(pos.x == (unsigned int)pos.x && pos.y == (unsigned int)pos.y, "Numbers must be integers");
     int index            = (int)(pos.x * (_gridSize.height + 1) + pos.y) * 3;
     float* vertArray     = (float*)_vertices;
+    if (vertArray[index] == vertex.x && vertArray[index + 1] == vertex.y && vertArray[index + 2] == vertex.z)
+        return;
+    Director::getInstance()->requestRender(RenderReason::Geometry);
     vertArray[index]     = vertex.x;
     vertArray[index + 1] = vertex.y;
     vertArray[index + 2] = vertex.z;
@@ -723,6 +728,9 @@ void TiledGrid3D::setTile(const Vec2& pos, const Quad3& coords)
     AXASSERT(pos.x == (unsigned int)pos.x && pos.y == (unsigned int)pos.y, "Numbers must be integers");
     int idx          = (int)(_gridSize.height * pos.x + pos.y) * 4 * 3;
     float* vertArray = (float*)_vertices;
+    if (memcmp(&vertArray[idx], &coords, sizeof(Quad3)) == 0)
+        return;
+    Director::getInstance()->requestRender(RenderReason::Geometry);
     memcpy(&vertArray[idx], &coords, sizeof(Quad3));
 }
 

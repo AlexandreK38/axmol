@@ -734,6 +734,8 @@ public:
                      int maxLineWidth          = 0);
 
 protected:
+    void requestContentUpdate();
+
     struct LetterInfo
     {
         char32_t utf32Char;

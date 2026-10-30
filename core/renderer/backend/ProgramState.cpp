@@ -37,6 +37,19 @@
 
 NS_AX_BACKEND_BEGIN
 
+namespace
+{
+void updateUniformBuffer(void* destination, const void* data, std::size_t size)
+{
+    if (memcmp(destination, data, size) == 0)
+        return;
+    auto director = Director::getInstance();
+    if (!director->isDrawingScene())
+        director->requestRender(RenderReason::Resource);
+    memcpy(destination, data, size);
+}
+}  // namespace
+
 // static field
 std::vector<ProgramState::AutoBindingResolver*> ProgramState::_customAutoBindingResolvers;
 
@@ -249,7 +262,18 @@ backend::UniformLocation ProgramState::getUniformLocation(std::string_view unifo
 
 void ProgramState::setCallbackUniform(const backend::UniformLocation& uniformLocation, const UniformCallback& callback)
 {
-    _callbackUniforms[uniformLocation] = callback;
+    if (callback)
+    {
+        _callbackUniforms[uniformLocation] = callback;
+        if (!_callbackRenderActivity)
+            _callbackRenderActivity = Director::getInstance()->acquireRenderActivity();
+    }
+    else
+    {
+        _callbackUniforms.erase(uniformLocation);
+        if (_callbackUniforms.empty())
+            _callbackRenderActivity.reset();
+    }
 }
 
 void ProgramState::setUniform(const backend::UniformLocation& uniformLocation, const void* data, std::size_t size)
@@ -269,11 +293,12 @@ void ProgramState::setVertexUniform(int location, const void* data, std::size_t 
 
 #if AX_GLES_PROFILE != 200
     assert(location + offset + size <= _vertexUniformBufferSize);
-    memcpy(_uniformBuffers.data() + location + offset, data, size);
+    auto destination = _uniformBuffers.data() + location + offset;
 #else
     assert(offset + size <= _vertexUniformBufferSize);
-    memcpy(_uniformBuffers.data() + offset, data, size);
+    auto destination = _uniformBuffers.data() + offset;
 #endif
+    updateUniformBuffer(destination, data, size);
 }
 
 #ifdef AX_USE_METAL
@@ -282,7 +307,8 @@ void ProgramState::setFragmentUniform(int location, const void* data, std::size_
     if (location < 0 || offset < 0)
         return;
 
-    memcpy(_uniformBuffers.data() + _vertexUniformBufferSize + location + offset, data, size);
+    auto destination = _uniformBuffers.data() + _vertexUniformBufferSize + location + offset;
+    updateUniformBuffer(destination, data, size);
 }
 #endif
 
@@ -387,6 +413,11 @@ void ProgramState::setTexture(int location,
         return;
 
     auto& info = textureInfo[location];
+    if (info.textures.size() != 1 || info.textures[0] != texture || info.slots[0] != slot || info.indexs[0] != index)
+    {
+        if (!Director::getInstance()->isDrawingScene())
+            Director::getInstance()->requestRender(RenderReason::Texture);
+    }
     info.assign(slot, index, texture);
 
 #if AX_ENABLE_CACHE_TEXTURE_DATA
@@ -402,6 +433,11 @@ void ProgramState::setTextureArray(int location,
     assert(slots.size() == textures.size());
 
     auto& info = textureInfo[location];
+    if (info.slots == slots && info.textures == textures &&
+        std::all_of(info.indexs.begin(), info.indexs.end(), [](int index) { return index == 0; }))
+        return;
+    if (!Director::getInstance()->isDrawingScene())
+        Director::getInstance()->requestRender(RenderReason::Texture);
     info       = {std::move(slots), std::move(textures)};
 
 #if AX_ENABLE_CACHE_TEXTURE_DATA

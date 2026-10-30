@@ -31,6 +31,7 @@
 #include "UtilsMTL.h"
 #include "../Macros.h"
 #include "BufferManager.h"
+#include "base/Director.h"
 #include "DepthStencilStateMTL.h"
 #include "RenderTargetMTL.h"
 
@@ -189,16 +190,45 @@ void CommandBufferMTL::setRenderPipeline(RenderPipeline* renderPipeline)
     _renderPipelineMTL = static_cast<RenderPipelineMTL*>(renderPipeline);
 }
 
+bool CommandBufferMTL::isDrawableAvailable()
+{
+    // Do not acquire nextDrawable before BEFORE_DRAW: capture callbacks must be
+    // able to set framebufferOnly first. A transient acquisition failure is
+    // handled when encoding the default render target and reported by endFrame.
+    auto layer = DriverMTL::getCAMetalLayer();
+    return layer.drawableSize.width > 0 && layer.drawableSize.height > 0;
+}
+
+void CommandBufferMTL::prepareForUpdates()
+{
+    if (!_updatesPrepared)
+    {
+        dispatch_semaphore_wait(_frameBoundarySemaphore, DISPATCH_TIME_FOREVER);
+        BufferManager::beginFrame();
+        _updatesPrepared = true;
+    }
+}
+
+void CommandBufferMTL::finishUpdates()
+{
+    if (_updatesPrepared)
+    {
+        dispatch_semaphore_signal(_frameBoundarySemaphore);
+        _updatesPrepared = false;
+    }
+}
+
 bool CommandBufferMTL::beginFrame()
 {
+    prepareForUpdates();
     _autoReleasePool = objc_autoreleasePoolPush();
-    dispatch_semaphore_wait(_frameBoundarySemaphore, DISPATCH_TIME_FOREVER);
-
     _mtlCommandBuffer = [_mtlCommandQueue commandBuffer];
-    // [_mtlCommandBuffer enqueue];
-    // commit will enqueue automatically
-
-    BufferManager::beginFrame();
+    _screenDrawable      = nil;
+    _screenPassAttempted = false;
+    _framePresented      = false;
+    // Even allocation failure must drain node-owned CPU commands in this tick.
+    // Objective-C encoding into nil is a no-op; endFrame reports failure and
+    // completes readbacks with an empty descriptor rather than retaining commands.
     return true;
 }
 
@@ -218,6 +248,17 @@ void CommandBufferMTL::updateRenderCommandEncoder(const RenderTarget* renderTarg
     {
         [_mtlRenderEncoder endEncoding];
         _mtlRenderEncoder = nil;
+    }
+
+    if (renderTarget->isDefaultRenderTarget())
+    {
+        if (!_screenPassAttempted)
+        {
+            _screenDrawable      = DriverMTL::getCurrentDrawable();
+            _screenPassAttempted = true;
+        }
+        if (!_screenDrawable)
+            return;
     }
 
     auto mtlDescriptor  = toMTLRenderPassDescriptor(renderTarget, renderPassDesc);
@@ -350,18 +391,38 @@ void CommandBufferMTL::endFrame()
     [_mtlRenderEncoder endEncoding];
     _mtlRenderEncoder = nil;
 
-    auto currentDrawable = DriverMTL::getCurrentDrawable();
-    [_mtlCommandBuffer presentDrawable:currentDrawable];
+    auto currentDrawable = _presentationEnabled ? _screenDrawable : nil;
+    _framePresented      = currentDrawable != nil && _mtlCommandBuffer != nil;
+    if (_framePresented)
+        [_mtlCommandBuffer presentDrawable:currentDrawable];
     _drawableTexture = currentDrawable.texture;
-    [_mtlCommandBuffer addCompletedHandler:^(id<MTLCommandBuffer> commandBuffer) {
-      // GPU work is complete
-      // Signal the semaphore to start the CPU work
-      dispatch_semaphore_signal(_frameBoundarySemaphore);
-    }];
-
-    flush();
+    auto retry       = ax::Director::getInstance()->getRenderRequestCallback(ax::RenderReason::Retry);
+    if (_mtlCommandBuffer)
+    {
+        [_mtlCommandBuffer addCompletedHandler:^(id<MTLCommandBuffer> commandBuffer) {
+          if (commandBuffer.status == MTLCommandBufferStatusError)
+              retry();
+          dispatch_semaphore_signal(_frameBoundarySemaphore);
+        }];
+        // The completion handler owns this reservation after submission.
+        _updatesPrepared = false;
+        flush();
+    }
+    else
+    {
+        auto callbacks = std::move(_captureCallbacks);
+        _captureCallbacks.clear();
+        for (auto& callback : callbacks)
+        {
+            callback.second(PixelBufferDescriptor{});
+            AX_SAFE_RELEASE(callback.first);
+        }
+        retry();
+        finishUpdates();
+    }
 
     DriverMTL::resetCurrentDrawable();
+    _screenDrawable = nil;
     objc_autoreleasePoolPop(_autoReleasePool);
     _autoReleasePool = nullptr;
 }

@@ -544,6 +544,10 @@ public:
     virtual bool init() override;
 
 protected:
+    V2F_C4B_T2F_Triangle* expandTriangles(size_t vertexCount);
+    V2F_C4B_T2F* expandLines(size_t vertexCount);
+    V2F_C4B_T2F* expandPoints(size_t vertexCount);
+
     void updateBuffers();
     void updateShader();
     void updateShaderInternal(CustomCommand& cmd,
@@ -768,4 +772,3 @@ public:
 
 /** @} */
 }  // namespace ax
-

@@ -125,6 +125,7 @@ void RenderView::pollEvents() {}
 
 void RenderView::updateDesignResolutionSize()
 {
+    Director::getInstance()->requestRender(RenderReason::Surface);
     if (_screenSize.width > 0 && _screenSize.height > 0 && _designResolutionSize.width > 0 &&
         _designResolutionSize.height > 0)
     {
@@ -202,6 +203,8 @@ Vec2 RenderView::getFrameSize() const
 
 void RenderView::setFrameSize(float width, float height)
 {
+    if (_screenSize != Vec2(width, height))
+        Director::getInstance()->requestRender(RenderReason::Surface);
     _screenSize = Vec2(width, height);
 
     // Github issue #16003 and #16485

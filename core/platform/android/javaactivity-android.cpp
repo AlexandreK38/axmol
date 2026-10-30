@@ -109,6 +109,7 @@ JNIEXPORT void JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeInit(JNIEnv*, jcla
 
 JNIEXPORT void JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeOnContextLost(JNIEnv*, jclass, jboolean isWarmStart)
 {
+    ax::Director::getInstance()->requestRender(ax::RenderReason::Surface);
 #if AX_ENABLE_RESTART_APPLICATION_ON_CONTEXT_LOST
     auto director = ax::Director::getInstance();
     ax::EventCustom recreatedEvent(EVENT_APP_RESTARTING);
@@ -149,6 +150,7 @@ JNIEXPORT jintArray JNICALL Java_dev_axmol_lib_AxmolActivity_getGLContextAttrs(J
 JNIEXPORT void JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeOnSurfaceChanged(JNIEnv*, jclass, jint w, jint h)
 {
     auto director = ax::Director::getInstance();
+    director->requestRender(ax::RenderReason::Surface);
     auto renderView = director->getRenderView();
     if (renderView)
     {

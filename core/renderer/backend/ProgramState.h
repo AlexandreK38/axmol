@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include "base/RenderActivity.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -391,6 +393,7 @@ protected:
 
     backend::Program* _program = nullptr;
     std::unordered_map<UniformLocation, UniformCallback, UniformLocation> _callbackUniforms;
+    ax::RenderActivity _callbackRenderActivity;
     yasio::sbyte_buffer _uniformBuffers;
     std::size_t _vertexUniformBufferSize   = 0;
     std::size_t _fragmentUniformBufferSize = 0;

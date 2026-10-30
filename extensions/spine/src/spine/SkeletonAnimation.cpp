@@ -27,10 +27,28 @@
  * SPINE RUNTIMES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
+#include "base/Director.h"
 #include <algorithm>
 #include <spine/Extension.h>
 #include <spine/SkeletonAnimation.h>
 #include <spine/spine-axmol.h>
+
+namespace
+{
+void requestSkeletonRender(spine::AnimationState* state)
+{
+    auto& tracks = state->getTracks();
+    for (size_t i = 0; i < tracks.size(); ++i)
+    {
+        auto track = tracks[i];
+        if (track && (track->getLoop() || !track->isComplete() || track->getMixingFrom()))
+        {
+            ax::Director::getInstance()->requestRender(ax::RenderReason::Geometry);
+            break;
+        }
+    }
+}
+}  // namespace
 
 USING_NS_AX;
 using std::max;
@@ -129,19 +147,24 @@ namespace spine {
 		delete _state;
 	}
 
-	void SkeletonAnimation::update(float deltaTime) {
-		if (_updateOnlyIfVisible && !isVisible()) return;
+void SkeletonAnimation::update(float deltaTime)
+{
+    if (_updateOnlyIfVisible && !isVisible())
+        return;
 
-		super::update(deltaTime);
+    requestSkeletonRender(_state);
+    super::update(deltaTime);
 
-		deltaTime *= _timeScale;
-		if (_preUpdateListener) _preUpdateListener(this);
-		_state->update(deltaTime);
-		_state->apply(*_skeleton);
-        _skeleton->update(deltaTime);
-		_skeleton->updateWorldTransform(Physics_Update);
-		if (_postUpdateListener) _postUpdateListener(this);
-	}
+    deltaTime *= _timeScale;
+    if (_preUpdateListener)
+        _preUpdateListener(this);
+    _state->update(deltaTime);
+    _state->apply(*_skeleton);
+    _skeleton->update(deltaTime);
+    _skeleton->updateWorldTransform(Physics_Update);
+    if (_postUpdateListener)
+        _postUpdateListener(this);
+}
 
 	void SkeletonAnimation::draw(axmol::Renderer *renderer, const axmol::Mat4 &transform, uint32_t transformFlags) {
 		if (_firstDraw) {

@@ -1,3 +1,4 @@
+#include "base/Director.h"
 #include "CCSlot.h"
 #include "CCTextureAtlasData.h"
 #include "CCArmatureDisplay.h"
@@ -203,6 +204,8 @@ void CCSlot::_updateFrame()
 
 void CCSlot::_updateMesh()
 {
+    if (_renderDisplay)
+        ax::Director::getInstance()->requestRender(ax::RenderReason::Geometry);
     const auto scale           = _armature->_armatureData->scale;
     const auto& deformVertices = _deformVertices->vertices;
     const auto& bones          = _deformVertices->bones;
@@ -361,6 +364,8 @@ void CCSlot::_updateMesh()
 
 void CCSlot::_updateTransform()
 {
+    if (_renderDisplay)
+        ax::Director::getInstance()->requestRender(ax::RenderReason::Geometry);
     static ax::Mat4 transform;
     transform.m[0] = globalTransformMatrix.a;
     transform.m[1] = globalTransformMatrix.b;

@@ -40,6 +40,13 @@ THE SOFTWARE.
 namespace ax
 {
 
+void ProgressTimer::setBarChangeRate(const Vec2& barChangeRate)
+{
+    if (_barChangeRate != barChangeRate)
+        _director->requestRender(RenderReason::Node);
+    _barChangeRate = barChangeRate;
+}
+
 #define kProgressTextureCoordsCount 4
 //  kProgressTextureCoords holds points {0,1} {0,0} {1,0} {1,1} we can represent it as bits
 const char kProgressTextureCoords = 0x4b;
@@ -176,6 +183,7 @@ void ProgressTimer::setType(Type type)
     {
         //    release all previous information
         _vertexData.clear();
+        _director->requestRender(RenderReason::Node);
         _type = type;
     }
 }
@@ -184,6 +192,7 @@ void ProgressTimer::setReverseDirection(bool reverse)
 {
     if (_reverseDirection != reverse)
     {
+        _director->requestRender(RenderReason::Node);
         _reverseDirection = reverse;
         //    release all previous information
         _vertexData.clear();
@@ -270,6 +279,7 @@ void ProgressTimer::updateColor()
 
 void ProgressTimer::updateProgress()
 {
+    _director->requestRender(RenderReason::Geometry);
     switch (_type)
     {
     case Type::RADIAL:
@@ -326,7 +336,10 @@ uint8_t ProgressTimer::getDisplayedOpacity() const
 
 void ProgressTimer::setMidpoint(const Vec2& midPoint)
 {
-    _midpoint = midPoint.getClampPoint(Vec2::ZERO, Vec2(1, 1));
+    const auto value = midPoint.getClampPoint(Vec2::ZERO, Vec2(1, 1));
+    if (_midpoint != value)
+        _director->requestRender(RenderReason::Node);
+    _midpoint = value;
 }
 
 ///

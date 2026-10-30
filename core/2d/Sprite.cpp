@@ -48,6 +48,20 @@ THE SOFTWARE.
 namespace ax
 {
 
+void Sprite::setDirty(bool dirty)
+{
+    if (dirty)
+        _director->requestRender(RenderReason::Geometry);
+    _dirty = dirty;
+}
+
+void Sprite::setBlendFunc(const BlendFunc& blendFunc)
+{
+    if (_blendFunc != blendFunc)
+        _director->requestRender(RenderReason::Node);
+    _blendFunc = blendFunc;
+}
+
 // MARK: create, init, dealloc
 Sprite* Sprite::createWithTexture(Texture2D* texture)
 {
@@ -426,6 +440,8 @@ void Sprite::setTexture(Texture2D* texture)
     {
         if (_texture != texture)
         {
+            _director->requestRender(RenderReason::Texture);
+            _textureRectInitialized = false;
             AX_SAFE_RETAIN(texture);
             AX_SAFE_RELEASE(_texture);
             _texture = texture;
@@ -451,6 +467,13 @@ void Sprite::setTextureRect(const Rect& rect)
 
 void Sprite::setTextureRect(const Rect& rect, bool rotated, const Vec2& untrimmedSize)
 {
+    if (_textureRectInitialized && _rect.equals(rect) && _rectRotated == rotated &&
+        _originalContentSize == untrimmedSize && _lastTextureRectOffset == _unflippedOffsetPositionFromCenter &&
+        (_contentSize != Vec2::ZERO || untrimmedSize == Vec2::ZERO) &&
+        (!_autoSizeEnabled || _contentSize == untrimmedSize))
+        return;
+    _textureRectInitialized = true;
+    _lastTextureRectOffset  = _unflippedOffsetPositionFromCenter;
     _rectRotated = rotated;
 
     if (_autoSizeEnabled || _contentSize == Vec2::ZERO)
@@ -466,6 +489,7 @@ void Sprite::setTextureRect(const Rect& rect, bool rotated, const Vec2& untrimme
 
 void Sprite::updatePoly()
 {
+    _director->requestRender(RenderReason::Geometry);
     // There are 3 cases:
     //
     // A) a non 9-sliced, non stretched
@@ -1265,18 +1289,24 @@ void Sprite::setDirtyRecursively(bool bValue)
 
 void Sprite::setPosition(const Vec2& pos)
 {
+    if (_position == pos && !_usingNormalizedPosition)
+        return;
     Node::setPosition(pos);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setPosition(float x, float y)
 {
+    if (_position.x == x && _position.y == y && !_usingNormalizedPosition)
+        return;
     Node::setPosition(x, y);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setRotation(float rotation)
 {
+    if (_rotationZ_X == rotation && _rotationZ_Y == rotation)
+        return;
     Node::setRotation(rotation);
 
     SET_DIRTY_RECURSIVELY();
@@ -1284,30 +1314,40 @@ void Sprite::setRotation(float rotation)
 
 void Sprite::setRotationSkewX(float fRotationX)
 {
+    if (_rotationZ_X == fRotationX)
+        return;
     Node::setRotationSkewX(fRotationX);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setRotationSkewY(float fRotationY)
 {
+    if (_rotationZ_Y == fRotationY)
+        return;
     Node::setRotationSkewY(fRotationY);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setSkewX(float sx)
 {
+    if (_skewX == sx)
+        return;
     Node::setSkewX(sx);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setSkewY(float sy)
 {
+    if (_skewY == sy)
+        return;
     Node::setSkewY(sy);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setScaleX(float scaleX)
 {
+    if (_scaleX == scaleX)
+        return;
     Node::setScaleX(scaleX);
     SET_DIRTY_RECURSIVELY();
 }
@@ -1318,30 +1358,40 @@ void Sprite::setScaleY(float scaleY)
     if (_texture &&_texture->isRenderTarget())
         scaleY = std::abs(scaleY);
 #endif
+    if (_scaleY == scaleY)
+        return;
     Node::setScaleY(scaleY);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setScale(float fScale)
 {
+    if (_scaleX == fScale && _scaleY == fScale && _scaleZ == fScale)
+        return;
     Node::setScale(fScale);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setScale(float scaleX, float scaleY)
 {
+    if (_scaleX == scaleX && _scaleY == scaleY)
+        return;
     Node::setScale(scaleX, scaleY);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setPositionZ(float fVertexZ)
 {
+    if (_positionZ == fVertexZ)
+        return;
     Node::setPositionZ(fVertexZ);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setAnchorPoint(const Vec2& anchor)
 {
+    if (_anchorPoint == anchor)
+        return;
     Node::setAnchorPoint(anchor);
     SET_DIRTY_RECURSIVELY();
 }
@@ -1354,12 +1404,16 @@ void Sprite::setIgnoreAnchorPointForPosition(bool value)
 
 void Sprite::setVisible(bool bVisible)
 {
+    if (_visible == bVisible)
+        return;
     Node::setVisible(bVisible);
     SET_DIRTY_RECURSIVELY();
 }
 
 void Sprite::setContentSize(const Vec2& size)
 {
+    if (_contentSize == size)
+        return;
     if (_stretchEnabled && (_renderMode == RenderMode::QUAD_BATCHNODE || _renderMode == RenderMode::POLYGON))
         AXLOGW(
             "Sprite::setContentSize() doesn't stretch the sprite when using QUAD_BATCHNODE or POLYGON render modes");
@@ -1461,6 +1515,7 @@ bool Sprite::isFlippedY() const
 
 void Sprite::flipX()
 {
+    _director->requestRender(RenderReason::Geometry);
     if (_renderMode == RenderMode::QUAD_BATCHNODE)
         setDirty(true);
     else if (_renderMode == RenderMode::POLYGON)
@@ -1478,6 +1533,7 @@ void Sprite::flipX()
 
 void Sprite::flipY()
 {
+    _director->requestRender(RenderReason::Geometry);
     if (_renderMode == RenderMode::QUAD_BATCHNODE)
         setDirty(true);
     else if (_renderMode == RenderMode::POLYGON)
@@ -1536,6 +1592,7 @@ void Sprite::setOpacityModifyRGB(bool modify)
 {
     if (_opacityModifyRGB != modify)
     {
+        _director->requestRender(RenderReason::Node);
         _opacityModifyRGB = modify;
         updateColor();
     }
@@ -1568,6 +1625,7 @@ void Sprite::setSpriteFrame(SpriteFrame* spriteFrame)
     // do not removed by SpriteFrameCache::removeUnusedSpriteFrames
     if (_spriteFrame != spriteFrame)
     {
+        _director->requestRender(RenderReason::Geometry);
         AX_SAFE_RELEASE(_spriteFrame);
         _spriteFrame = spriteFrame;
         spriteFrame->retain();
@@ -1580,8 +1638,7 @@ void Sprite::setSpriteFrame(SpriteFrame* spriteFrame)
         setTexture(texture);
 
     // update rect
-    _rectRotated = spriteFrame->isRotated();
-    setTextureRect(spriteFrame->getRect(), _rectRotated, spriteFrame->getOriginalSize());
+    setTextureRect(spriteFrame->getRect(), spriteFrame->isRotated(), spriteFrame->getOriginalSize());
 
     if (spriteFrame->hasPolygonInfo())
     {
@@ -1715,6 +1772,7 @@ const PolygonInfo& Sprite::getPolygonInfo() const
 
 void Sprite::setPolygonInfo(const PolygonInfo& info)
 {
+    _director->requestRender(RenderReason::Geometry);
     _polyInfo   = info;
     _renderMode = RenderMode::POLYGON;
 }

@@ -23,6 +23,8 @@
  ****************************************************************************/
 
 #include "BufferMTL.h"
+#include "base/Director.h"
+#include "renderer/Renderer.h"
 #include "../Macros.h"
 #include "BufferManager.h"
 
@@ -67,13 +69,16 @@ BufferMTL::~BufferMTL()
 
 void BufferMTL::updateData(const void* data, std::size_t size)
 {
-    assert(size <= _size);
-    updateIndex();
-    memcpy((uint8_t*)_mtlBuffer.contents, data, size);
+    BufferMTL::updateSubData(data, 0, size);
 }
 
 void BufferMTL::updateSubData(const void* data, std::size_t offset, std::size_t size)
 {
+    auto director = ax::Director::getInstance();
+    if (auto renderer = director->getRenderer())
+        renderer->prepareForUpdates();
+    if (!director->isDrawingScene())
+        director->requestRender(ax::RenderReason::Resource);
     assert(offset + size <= _size);
     updateIndex();
     memcpy((uint8_t*)_mtlBuffer.contents + offset, data, size);

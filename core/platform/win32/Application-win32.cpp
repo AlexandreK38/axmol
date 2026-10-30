@@ -115,7 +115,9 @@ int Application::run()
             // If 'waitMS' is equal or less than 1ms, don't sleep and run into next loop to
             // boost CPU to next frame accurately.
             waitMS = static_cast<LONG>((_animationInterval.QuadPart - interval) * 1000LL / freq.QuadPart - 1L);
-            if (waitMS > 1L)
+            if (director->getRenderMode() == RenderMode::OnDemand)
+                Sleep(waitMS > 0L ? waitMS + 1L : 1L);
+            else if (waitMS > 1L)
                 Sleep(waitMS);
         }
     }

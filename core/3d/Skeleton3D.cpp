@@ -35,6 +35,8 @@ namespace ax
  */
 void Bone3D::setInverseBindPose(const Mat4& m)
 {
+    if (!Director::getInstance()->isDrawingScene())
+        Director::getInstance()->requestRender(RenderReason::Geometry);
     _invBindPose = m;
 }
 
@@ -45,11 +47,15 @@ const Mat4& Bone3D::getInverseBindPose()
 
 void Bone3D::setOriPose(const Mat4& m)
 {
+    if (!Director::getInstance()->isDrawingScene())
+        Director::getInstance()->requestRender(RenderReason::Geometry);
     _oriPose = m;
 }
 
 void Bone3D::resetPose()
 {
+    if (!Director::getInstance()->isDrawingScene())
+        Director::getInstance()->requestRender(RenderReason::Geometry);
     _local = _oriPose;
 
     for (auto&& it : _children)
@@ -97,6 +103,8 @@ const Mat4& Bone3D::getWorldMat()
 
 void Bone3D::setAnimationValue(float* trans, float* rot, float* scale, void* tag, float weight)
 {
+    if (!Director::getInstance()->isDrawingScene())
+        Director::getInstance()->requestRender(RenderReason::Geometry);
     for (auto&& it : _blendStates)
     {
         if (it.tag == tag)

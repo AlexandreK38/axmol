@@ -102,6 +102,7 @@ public:
         addTest("Physics", []() { return new PhysicsTests(); });
 #endif
         addTest("Physics3D", []() { return new Physics3DTests(); });
+        addTest("Render demand", []() { return new RenderDemandTests(); });
         addTest("RenderTexture", []() { return new RenderTextureTests(); });
         addTest("Scene", []() { return new SceneTests(); });
         addTest("Spine", []() { return new SpineTests(); });
@@ -205,9 +206,15 @@ Coroutine TestController::traverseTestList(TestList* testList)
          }
          if (callback)
          {
+             const auto& testName = testList->_childTestNames[testIndex++];
+             // Limit automated runs to one root entry when a filter is supplied.
+             const auto filter = std::getenv("AXMOL_TEST_FILTER");
+             if (testList == _rootTestList && filter && *filter &&
+                 std::string_view(testName).substr(testName.find(':') + 1) != filter)
+                 continue;
              auto test = callback();
              test->setTestParent(testList);
-             test->setTestName(testList->_childTestNames[testIndex++]);
+             test->setTestName(testName);
 
              ActionCoroutine* subAction = nullptr;
              if (test->isTestList())

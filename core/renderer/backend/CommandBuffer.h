@@ -85,6 +85,17 @@ public:
      * @brief Indicate the begining of a frame
      */
     virtual bool beginFrame() = 0;
+    /**
+     * Synchronizes dynamic uploads during updates without allocating a graphics frame.
+     */
+    virtual void prepareForUpdates() {}
+    virtual void finishUpdates() {}
+    /**
+     * Returns false when the backend could not acquire or present a drawable.
+     */
+    virtual bool wasFramePresented() const { return true; }
+    virtual bool isDrawableAvailable() { return true; }
+    virtual void setPresentationEnabled(bool enabled) {}
 
     /**
      * Begin a render pass, initial color, depth and stencil attachment.

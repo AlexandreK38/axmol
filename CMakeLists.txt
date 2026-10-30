@@ -52,6 +52,11 @@ add_subdirectory(${_AX_ROOT}/core ${ENGINE_BINARY_PATH}/axmol/core)
 # prevent tests project to build "axmol/core" again
 set(BUILD_ENGINE_DONE ON)
 
+option(AX_BUILD_RENDER_DEMAND_TEST "Build the standalone render-demand device test" OFF)
+if(AX_BUILD_RENDER_DEMAND_TEST OR (AX_BUILD_TESTS AND (LINUX OR MACOSX OR (WINDOWS AND NOT WINRT))))
+  add_subdirectory(tests/render-demand/scene ${CMAKE_BINARY_DIR}/tests/render-demand-smoke)
+endif()
+
 if(AX_BUILD_TESTS)
   message(STATUS "CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}")
 

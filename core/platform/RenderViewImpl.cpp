@@ -681,6 +681,10 @@ bool RenderViewImpl::initWithRect(std::string_view viewName, const ax::Rect& rec
     glfwSetKeyCallback(_mainWindow, GLFWEventHandler::onGLFWKeyCallback);
     glfwSetWindowPosCallback(_mainWindow, GLFWEventHandler::onGLFWWindowPosCallback);
     glfwSetWindowSizeCallback(_mainWindow, GLFWEventHandler::onGLFWWindowSizeCallback);
+    glfwSetWindowRefreshCallback(_mainWindow,
+                                 [](GLFWwindow*) { Director::getInstance()->requestRender(RenderReason::Surface); });
+    glfwSetFramebufferSizeCallback(
+        _mainWindow, [](GLFWwindow*, int, int) { Director::getInstance()->requestRender(RenderReason::Surface); });
     glfwSetWindowIconifyCallback(_mainWindow, GLFWEventHandler::onGLFWWindowIconifyCallback);
     glfwSetWindowFocusCallback(_mainWindow, GLFWEventHandler::onGLFWWindowFocusCallback);
     glfwSetWindowCloseCallback(_mainWindow, GLFWEventHandler::onGLFWWindowCloseCallback);
@@ -756,6 +760,28 @@ bool RenderViewImpl::initWithFullscreen(std::string_view viewname, const GLFWvid
 bool RenderViewImpl::isGfxContextReady()
 {
     return nullptr != _mainWindow;
+}
+
+bool RenderViewImpl::isSurfaceReady()
+{
+#if defined(__EMSCRIPTEN__)
+    if (_contextLost)
+        return false;
+#endif
+    if (!isGfxContextReady())
+        return false;
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(_mainWindow, &width, &height);
+    return width > 0 && height > 0;
+}
+
+bool RenderViewImpl::present()
+{
+    _presentationFailed = false;
+    _presenting         = true;
+    swapBuffers();
+    _presenting = false;
+    return !_presentationFailed;
 }
 
 void RenderViewImpl::end()
@@ -1123,6 +1149,8 @@ ax::Rect RenderViewImpl::getScissorRect() const
 
 void RenderViewImpl::onGLFWError(int errorID, const char* errorDesc)
 {
+    if (_presenting)
+        _presentationFailed = true;
     if (_mainWindow)
     {
         _glfwError = fmt::format("GLFWError #{} Happen, {}", errorID, errorDesc);
@@ -1367,6 +1395,7 @@ void RenderViewImpl::onGLFWWindowSizeCallback(GLFWwindow* /*window*/, int w, int
 
 void RenderViewImpl::onGLFWWindowIconifyCallback(GLFWwindow* /*window*/, int iconified)
 {
+    Director::getInstance()->requestRender(RenderReason::Surface);
     if (iconified == GL_TRUE)
     {
         Application::getInstance()->applicationDidEnterBackground();
@@ -1381,6 +1410,7 @@ void RenderViewImpl::onGLFWWindowFocusCallback(GLFWwindow* /*window*/, int focus
 {
     if (focused == GL_TRUE)
     {
+        Director::getInstance()->requestRender(RenderReason::Surface);
         Director::getInstance()->getEventDispatcher()->dispatchCustomEvent(RenderViewImpl::EVENT_WINDOW_FOCUSED, nullptr);
     }
     else

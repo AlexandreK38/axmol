@@ -142,6 +142,7 @@ Copyright (C) 2008 Apple Inc. All Rights Reserved.
 
 /** RenderHostView uses double-buffer. This method swaps the buffers */
 - (void)swapBuffers;
+- (BOOL)presentFrame;
 
 - (CGRect)convertRectFromViewToSurface:(CGRect)rect;
 - (CGPoint)convertPointFromViewToSurface:(CGPoint)point;

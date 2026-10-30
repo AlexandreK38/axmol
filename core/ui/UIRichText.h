@@ -608,6 +608,7 @@ public:
     bool setString(std::string_view text);
 
 protected:
+    void requestFormatText();
     void adaptRenderers() override;
 
     void initRenderer() override;

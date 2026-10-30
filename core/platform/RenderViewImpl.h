@@ -106,8 +106,13 @@ public:
 
     /* override functions */
     bool isGfxContextReady() override;
+    bool isSurfaceReady() override;
+#if defined(__EMSCRIPTEN__)
+    void setContextLost(bool lost) { _contextLost = lost; }
+#endif
     void end() override;
     void swapBuffers() override;
+    bool present() override;
     void setFrameSize(float width, float height) override;
     void setIMEKeyboardState(bool bOpen) override;
 
@@ -218,6 +223,11 @@ public:
     static const std::string EVENT_WINDOW_CLOSE;
 
 private:
+#if defined(__EMSCRIPTEN__)
+    bool _contextLost = false;
+#endif
+    bool _presenting         = false;
+    bool _presentationFailed = false;
     AX_DISALLOW_COPY_AND_ASSIGN(RenderViewImpl);
 };
 

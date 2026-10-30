@@ -26,6 +26,7 @@
  Code based GamePlay3D's Camera: http://gameplay3d.org
 
  ****************************************************************************/
+#include "base/Director.h"
 #include "2d/Camera.h"
 #include "2d/CameraBackgroundBrush.h"
 #include "platform/RenderView.h"
@@ -35,6 +36,13 @@
 
 namespace ax
 {
+
+void Camera::setCameraFlag(CameraFlag flag)
+{
+    if (_cameraFlag != flag)
+        _director->requestRender(RenderReason::Node);
+    _cameraFlag = flag;
+}
 
 Camera* Camera::_visitingCamera = nullptr;
 Viewport Camera::_defaultViewport;
@@ -83,6 +91,10 @@ const Viewport& Camera::getDefaultViewport()
 }
 void Camera::setDefaultViewport(const Viewport& vp)
 {
+    if (_defaultViewport.x == vp.x && _defaultViewport.y == vp.y && _defaultViewport.width == vp.width &&
+        _defaultViewport.height == vp.height)
+        return;
+    Director::getInstance()->requestRender(RenderReason::Scene);
     _defaultViewport = vp;
 }
 
@@ -181,6 +193,7 @@ const Mat4& Camera::getViewProjectionMatrix() const
 
 void Camera::setAdditionalProjection(const Mat4& mat)
 {
+    _director->requestRender(RenderReason::Node);
     _projection = mat * _projection;
     getViewProjectionMatrix();
 }
@@ -397,6 +410,7 @@ void Camera::setDepth(int8_t depth)
 {
     if (_depth != depth)
     {
+        _director->requestRender(RenderReason::Node);
         _depth = depth;
         if (_scene)
         {
@@ -408,6 +422,9 @@ void Camera::setDepth(int8_t depth)
 
 void Camera::setZoom(float factor)
 {
+    if (_zoomFactor == factor)
+        return;
+    _director->requestRender(RenderReason::Node);
     _zoomFactor = factor;
     applyZoom();
 }
@@ -522,18 +539,27 @@ int Camera::getRenderOrder() const
 
 void Camera::setFOV(float fieldOfView)
 {
+    if (_fieldOfView == fieldOfView)
+        return;
+    _director->requestRender(RenderReason::Node);
     _fieldOfView = fieldOfView;
     Camera::updateTransform();
 }
 
 void Camera::setFarPlane(float farPlane)
 {
+    if (_farPlane == farPlane)
+        return;
+    _director->requestRender(RenderReason::Node);
     _farPlane = farPlane;
     Camera::updateTransform();
 }
 
 void Camera::setNearPlane(float nearPlane)
 {
+    if (_nearPlane == nearPlane)
+        return;
+    _director->requestRender(RenderReason::Node);
     _nearPlane = nearPlane;
     Camera::updateTransform();
 }
@@ -546,6 +572,9 @@ void Camera::visit(Renderer* renderer, const Mat4& parentTransform, uint32_t par
 
 void Camera::setBackgroundBrush(CameraBackgroundBrush* clearBrush)
 {
+    if (_clearBrush == clearBrush)
+        return;
+    _director->requestRender(RenderReason::Node);
     AX_SAFE_RETAIN(clearBrush);
     AX_SAFE_RELEASE(_clearBrush);
     _clearBrush = clearBrush;

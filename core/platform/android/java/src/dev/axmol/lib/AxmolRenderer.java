@@ -37,7 +37,7 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
     private final static long NANOSECONDSPERMICROSECOND = 1000000L;
 
     // The final animation interval which is used in 'onDrawFrame'
-    private static long sAnimationInterval = (long) (1.0f / 60f * AxmolRenderer.NANOSECONDSPERSECOND);
+    private static volatile long sAnimationInterval = (long) (1.0f / 60f * AxmolRenderer.NANOSECONDSPERSECOND);
     private static long FPS_CONTROL_THRESHOLD = (long) (1.0f / 1200.0f * AxmolRenderer.NANOSECONDSPERSECOND);
 
     // ===========================================================
@@ -50,6 +50,30 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
     private static boolean gNativeInitialized = false;
     private static boolean gNativeIsPaused = false;
     private boolean mSurfaceCreated = false;
+    private volatile boolean mSurfaceAvailable = false;
+    private boolean mFrameReady                = false;
+
+    static long getTickIntervalNanos()
+    {
+        return Math.max(1L, sAnimationInterval);
+    }
+
+    public void surfaceUnavailable()
+    {
+        mSurfaceAvailable = false;
+    }
+
+    // queueEvent does not trigger GLSurfaceView's implicit eglSwapBuffers.
+    public void tickOnDemand()
+    {
+        if (!mSurfaceAvailable || gNativeIsPaused || mFrameReady) return;
+        if (nativeTick())
+        {
+            mFrameReady = true;
+            AxmolGLSurfaceView.getInstance().requestRender();
+        }
+        AxmolGLSurfaceView.getInstance().synchronizeRenderMode(nativeIsRenderOnDemand());
+    }
 
     // ===========================================================
     // Constructors
@@ -76,6 +100,8 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceCreated(final GL10 GL10, final EGLConfig EGLConfig) {
         AxmolRenderer.nativeInit(this.mScreenWidth, this.mScreenHeight);
         this.mLastTickInNanoSeconds = System.nanoTime();
+        mFrameReady                 = false;
+        mSurfaceAvailable           = true;
 
         boolean isWarmStart = !mSurfaceCreated;
         mSurfaceCreated = true;
@@ -89,8 +115,14 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
     }
 
     @Override
-    public void onSurfaceChanged(final GL10 GL10, final int width, final int height) {
+    public void onSurfaceChanged(final GL10 GL10, final int width, final int height)
+    {
+        // A produced image for the old surface must not suppress the system redraw.
+        // The next native tick retries any unacknowledged presentation request.
+        mFrameReady = false;
         AxmolRenderer.nativeOnSurfaceChanged(width, height);
+        // A preserved EGL context only receives onSurfaceChanged when its surface returns.
+        mSurfaceAvailable = width > 0 && height > 0;
     }
 
     @Override
@@ -98,12 +130,22 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
         /*
          * Render time MUST be counted in, or the FPS will slower than appointed.
          */
-        AxmolRenderer.nativeRender();
+        if (!mFrameReady)
+        {
+            // Initial draw, system redraw or Continuous mode.
+            AxmolRenderer.nativeRender();
+        }
+        mFrameReady = false;
+        // This acknowledges the handoff to GLSurfaceView, whose swap follows this callback.
+        // EGL and context errors are retried through nativeOnContextLost and onSurfaceChanged.
+        nativeFramePresented();
+        AxmolGLSurfaceView.getInstance().synchronizeRenderMode(nativeIsRenderOnDemand());
         /*
          * No need to use algorithm in default(60,90,120... FPS) situation,
          * since onDrawFrame() was called by system 60 times per second by default.
          */
-        if (AxmolRenderer.sAnimationInterval > AxmolRenderer.FPS_CONTROL_THRESHOLD) {
+        if (!nativeIsRenderOnDemand() && AxmolRenderer.sAnimationInterval > AxmolRenderer.FPS_CONTROL_THRESHOLD)
+        {
             final long interval = System.nanoTime() - this.mLastTickInNanoSeconds;
 
             if (interval < AxmolRenderer.sAnimationInterval) {
@@ -127,6 +169,9 @@ public class AxmolRenderer implements GLSurfaceView.Renderer {
     private static native void nativeTouchesCancel(final int[] ids, final float[] xs, final float[] ys);
     private static native boolean nativeKeyEvent(final int keyCode,boolean isPressed);
     private static native void nativeRender();
+    private static native boolean nativeTick();
+    private static native boolean nativeIsRenderOnDemand();
+    private static native void nativeFramePresented();
     private static native void nativeInit(final int width, final int height);
     private static native void nativeOnContextLost(final boolean isWarmStart);
     private static native void nativeOnSurfaceChanged(final int width, final int height);

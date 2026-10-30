@@ -23,6 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
 
+#include "base/Director.h"
 #include "Bone.h"
 #include "Armature.h"
 #include "ArmatureDataManager.h"
@@ -180,6 +181,7 @@ void Bone::update(float delta)
 
     if (_boneTransformDirty)
     {
+        _director->requestRender(ax::RenderReason::Geometry);
         _worldInfo->copy(_tweenData);
         if (_dataVersion >= VERSION_COMBINED)
         {

@@ -104,6 +104,9 @@ void BufferGL::fillBuffer(const void* data, std::size_t offset, std::size_t size
 
 void BufferGL::updateData(const void* data, std::size_t size)
 {
+    auto director = ax::Director::getInstance();
+    if (!director->isDrawingScene())
+        director->requestRender(ax::RenderReason::Resource);
     assert(size && size <= _size);
 
     if (_buffer)
@@ -121,6 +124,9 @@ void BufferGL::updateData(const void* data, std::size_t size)
 
 void BufferGL::updateSubData(const void* data, std::size_t offset, std::size_t size)
 {
+    auto director = ax::Director::getInstance();
+    if (!director->isDrawingScene())
+        director->requestRender(ax::RenderReason::Resource);
 
     AXASSERT(_bufferAllocated != 0, "updateData should be invoke before updateSubData");
     AXASSERT(offset + size <= _bufferAllocated, "buffer size overflow");

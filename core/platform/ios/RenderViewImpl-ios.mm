@@ -316,6 +316,11 @@ void RenderViewImpl::end()
     release();
 }
 
+bool RenderViewImpl::present()
+{
+    return [(__bridge RenderHostView*)_hostViewHandle presentFrame];
+}
+
 void RenderViewImpl::swapBuffers()
 {
     [(__bridge RenderHostView*)_hostViewHandle swapBuffers];

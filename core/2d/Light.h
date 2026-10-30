@@ -75,12 +75,12 @@ public:
 
     /**light flag getter and setter*/
     LightFlag getLightFlag() const { return _lightFlag; }
-    void setLightFlag(LightFlag flag) { _lightFlag = flag; }
+    void setLightFlag(LightFlag flag);
 
     /**
      * light enabled getter and setter.
      */
-    void setEnabled(bool enabled) { _enabled = enabled; }
+    void setEnabled(bool enabled);
     bool isEnabled() const { return _enabled; }
 
     // override
@@ -157,7 +157,7 @@ public:
 
     /** get or set range */
     float getRange() const { return _range; }
-    void setRange(float range) { _range = range; }
+    void setRange(float range);
 
     PointLight();
     virtual ~PointLight();
@@ -214,7 +214,7 @@ public:
      *
      * @param range The range of point or spot light.
      */
-    void setRange(float range) { _range = range; }
+    void setRange(float range);
 
     /**
      * Returns the range of point or spot light.

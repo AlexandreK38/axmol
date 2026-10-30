@@ -266,7 +266,7 @@ public:
      *
      * @param clearColor Color value.
      */
-    inline void setClearColor(const Color4F& clearColor) { _clearColor = clearColor; }
+    void setClearColor(const Color4F& clearColor);
 
     /** Value for clearDepth. Valid only when "autoDraw" is true.
      *
@@ -278,7 +278,7 @@ public:
      *
      * @param clearDepth Value for clearDepth.
      */
-    inline void setClearDepth(float clearDepth) { _clearDepth = clearDepth; }
+    void setClearDepth(float clearDepth);
 
     /** Value for clear Stencil. Valid only when "autoDraw" is true.
      *
@@ -290,7 +290,7 @@ public:
      *
      * @param clearStencil Value for clear Stencil.
      */
-    inline void setClearStencil(int clearStencil) { _clearStencil = clearStencil; }
+    void setClearStencil(int clearStencil);
 
     /** When enabled, it will render its children into the texture automatically. Disabled by default for compatibility
      * reasons. Will be enabled in the future.
@@ -303,7 +303,7 @@ public:
      *
      * @param isAutoDraw Whether or not render its children into the texture automatically.
      */
-    inline void setAutoDraw(bool isAutoDraw) { _autoDraw = isAutoDraw; }
+    void setAutoDraw(bool isAutoDraw);
 
     /** Gets the Sprite being used.
      *
@@ -318,7 +318,7 @@ public:
      * @param keepMatrix Whether or not use stack matrix computed from scene hierarchy or generate new modelView and
      * projection matrix.
      */
-    inline void setKeepMatrix(bool keepMatrix) { _keepMatrix = keepMatrix; }
+    void setKeepMatrix(bool keepMatrix);
     /**Used for grab part of screen to a texture.
      * @param rtBegin The position of renderTexture on the fullRect.
      * @param fullRect The total size of screen.

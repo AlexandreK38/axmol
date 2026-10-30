@@ -101,6 +101,7 @@
 #include "Physics3DTest/Physics3DTest.h"
 #include "PhysicsTest/PhysicsTest.h"
 #include "ReleasePoolTest/ReleasePoolTest.h"
+#include "RenderDemandTest/RenderDemandTest.h"
 #include "RenderTextureTest/RenderTextureTest.h"
 #include "RotateWorldTest/RotateWorldTest.h"
 #include "Scene3DTest/Scene3DTest.h"

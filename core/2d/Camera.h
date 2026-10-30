@@ -114,7 +114,7 @@ public:
 
     /**get & set Camera flag*/
     CameraFlag getCameraFlag() const { return _cameraFlag; }
-    void setCameraFlag(CameraFlag flag) { _cameraFlag = flag; }
+    void setCameraFlag(CameraFlag flag);
 
     /**
      * Make Camera looks at target

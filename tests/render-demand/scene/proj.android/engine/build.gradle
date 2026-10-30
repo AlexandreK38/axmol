@@ -1,0 +1,23 @@
+apply plugin: 'com.android.library'
+
+def engineRoot = file('../../../../..')
+android {
+    namespace 'dev.axmol.lib'
+    compileSdk 36
+    defaultConfig { minSdk 24 }
+    sourceSets.main {
+        java.srcDirs = [new File(engineRoot, 'core/platform/android/java/src')]
+        aidl.srcDirs = [new File(engineRoot, 'core/platform/android/java/src')]
+        manifest.srcFile new File(engineRoot, 'core/platform/android/libaxmol/AndroidManifest.xml')
+    }
+    buildFeatures {
+        aidl = true
+        buildConfig = true
+    }
+}
+dependencies {
+    implementation fileTree(dir: new File(engineRoot, 'core/platform/android/java/libs'), include: ['*.jar'])
+    api 'androidx.media3:media3-exoplayer:1.2.1'
+    implementation 'androidx.annotation:annotation:1.9.1'
+    api 'com.google.guava:guava:33.5.0-android'
+}

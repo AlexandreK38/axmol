@@ -273,20 +273,51 @@ void Director::setRenderDefaults()
     setProjection(_projection);
 }
 
-// Draw the Scene
+void Director::setRenderMode(RenderMode mode)
+{
+    if (_renderMode != mode)
+    {
+        _renderMode = mode;
+        requestRender(RenderReason::Scene);
+    }
+}
+
+std::function<void()> Director::getRenderRequestCallback(RenderReason reason) const
+{
+    std::weak_ptr<RenderDemand> demand = _renderDemand;
+    return [demand, reason]() {
+        if (auto state = demand.lock())
+            state->request(reason);
+    };
+}
+
+void Director::notifyFramePresented(bool success)
+{
+    if (!_presentationPending)
+        return;
+    _presentationPending = false;
+    if (success)
+        ++_renderDiagnostics.presentations;
+    else
+    {
+        ++_renderDiagnostics.failedPresentations;
+        _renderDemand->retry(_presentationReasons);
+    }
+}
+
+// Update the scene and render when required by the current policy.
 void Director::drawScene()
 {
-    _renderer->beginFrame();
+    _didRenderLastTick = false;
+    ++_renderDiagnostics.ticks;
+    _renderer->prepareForUpdates();
+    if (_renderMode == RenderMode::Continuous)
+        _renderer->beginFrame();
 
-    // calculate "global" dt
     calculateDeltaTime();
-
     if (_renderView)
-    {
         _renderView->pollEvents();
-    }
 
-    // tick before glClear: issue #533
     if (!_paused)
     {
         _eventDispatcher->dispatchEvent(_eventBeforeUpdate);
@@ -294,43 +325,68 @@ void Director::drawScene()
         _eventDispatcher->dispatchEvent(_eventAfterUpdate);
     }
 
-    _renderer->clear(ClearFlag::ALL, _clearColor, 1, 0, -10000.0);
-
-    _eventDispatcher->dispatchEvent(_eventBeforeDraw);
-
-    /* to avoid flickr, nextScene MUST be here: after tick and before draw.
-     * FIXME: Which bug is this one. It seems that it can't be reproduced with v0.9
-     */
-    if (_nextScene)
+    // OnDemand must decide after scene activation and simulation. Continuous keeps
+    // its historical BEFORE_DRAW -> scene activation -> simulation event ordering.
+    const bool updateBeforeDraw = _renderMode == RenderMode::OnDemand;
+    if (updateBeforeDraw)
     {
-        setNextScene();
+        if (_nextScene)
+            setNextScene();
+#if (defined(AX_ENABLE_PHYSICS) || defined(AX_ENABLE_3D_PHYSICS) || defined(AX_ENABLE_NAVMESH))
+        if (_runningScene)
+            _runningScene->stepPhysicsAndNavigation(_deltaTime);
+#endif
+        updateFrameRate();
     }
 
+    if (_renderer->hasPendingCommands() || _renderer->isFrameStarted())
+        requestRender(RenderReason::Offscreen);
+
+    if (!isRenderRequested())
+    {
+        _renderer->finishUpdates();
+        return;
+    }
+
+    // Platform-owned presentations must be acknowledged before another frame.
+    if (_presentationPending)
+        notifyFramePresented(false);
+    const auto reasons = _renderDemand->consume(_renderMode);
+    if (!_renderView || !_renderView->isSurfaceReady() || !_renderer->isDrawableAvailable() || !_renderer->beginFrame())
+    {
+        _renderDemand->retry(reasons);
+        // A missing surface must not leave commands pointing to autoreleased nodes.
+        // A usable backend may still execute offscreen work without presenting.
+        _renderer->setPresentationEnabled(false);
+        if (_renderer->hasPendingCommands() && _renderer->beginFrame())
+            _renderer->render();
+        _renderer->endFrame();
+        _renderer->finishUpdates();
+        return;
+    }
+
+    _renderer->setPresentationEnabled(true);
+    _isDrawingScene = true;
+    _renderer->clear(ClearFlag::ALL, _clearColor, 1, 0, -10000.0);
+    _eventDispatcher->dispatchEvent(_eventBeforeDraw);
+    if (!updateBeforeDraw && _nextScene)
+        setNextScene();
     pushMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
 
     if (_runningScene)
     {
-#if (defined(AX_ENABLE_PHYSICS) || defined(AX_ENABLE_3D_PHYSICS) || \
-     defined(AX_ENABLE_NAVMESH))
-        _runningScene->stepPhysicsAndNavigation(_deltaTime);
+#if (defined(AX_ENABLE_PHYSICS) || defined(AX_ENABLE_3D_PHYSICS) || defined(AX_ENABLE_NAVMESH))
+        if (!updateBeforeDraw)
+            _runningScene->stepPhysicsAndNavigation(_deltaTime);
 #endif
-        // clear draw stats
         _renderer->clearDrawStats();
-
-        // render the scene
-        if (_renderView)
-            _renderView->renderScene(_runningScene, _renderer);
-
+        _renderView->renderScene(_runningScene, _renderer);
         _eventDispatcher->dispatchEvent(_eventAfterVisit);
     }
-
-    // draw the notifications node
     if (_notificationNode)
-    {
         _notificationNode->visit(_renderer, Mat4::IDENTITY, 0);
-    }
-
-    updateFrameRate();
+    if (!updateBeforeDraw)
+        updateFrameRate();
 
     if (_statsDisplay)
     {
@@ -338,22 +394,25 @@ void Director::drawScene()
         showStats();
 #endif
     }
-
     _renderer->render();
-
+    // Encoding is complete. Mutations in AFTER_DRAW belong to the next image.
+    _isDrawingScene = false;
     _eventDispatcher->dispatchEvent(_eventAfterDraw);
-
     popMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
 
-    _totalFrames++;
+    ++_totalFrames;
+    ++_renderDiagnostics.frames;
+    _renderDiagnostics.lastReasons = reasons;
+    _didRenderLastTick             = true;
+    _presentationReasons           = reasons;
+    _presentationPending           = true;
 
-    // swap buffers
-    if (_renderView)
-    {
-        _renderView->swapBuffers();
-    }
-
+    // GL views present here. Metal presents inside endFrame. Android/UWP swap outside Director.
+    const bool viewPresented = _renderView->present();
     _renderer->endFrame();
+    _renderer->finishUpdates();
+    if (!_renderView->isPresentationDeferred())
+        notifyFramePresented(viewPresented && _renderer->wasFramePresented());
 
     if (_statsDisplay)
     {
@@ -391,6 +450,7 @@ float Director::getDeltaTime() const
 }
 void Director::setRenderView(RenderView* renderView)
 {
+    requestRender(RenderReason::Surface);
     AXASSERT(renderView, "opengl view should not be null");
 
     if (_renderView != renderView)
@@ -694,6 +754,9 @@ float Director::getZEye() const
 
 void Director::setClearColor(const Color4F& clearColor)
 {
+    if (_clearColor == clearColor)
+        return;
+    requestRender(RenderReason::Scene);
     _clearColor = clearColor;
 }
 
@@ -1171,6 +1234,7 @@ void Director::restartDirector()
 
 void Director::setNextScene()
 {
+    requestRender(RenderReason::Scene);
     _eventDispatcher->dispatchEvent(_beforeSetNextScene);
 
     auto outgoingScene = _runningScene;
@@ -1232,6 +1296,7 @@ void Director::pause()
 
 void Director::resume()
 {
+    requestRender(RenderReason::Surface);
     if (!_paused)
     {
         return;
@@ -1488,6 +1553,7 @@ void Director::setContentScaleFactor(float scaleFactor)
 {
     if (scaleFactor != _contentScaleFactor)
     {
+        requestRender(RenderReason::Surface);
         _contentScaleFactor   = scaleFactor;
         _isStatusLabelUpdated = true;
     }
@@ -1495,6 +1561,7 @@ void Director::setContentScaleFactor(float scaleFactor)
 
 void Director::setNotificationNode(Node* node)
 {
+    requestRender(RenderReason::Scene);
     if (_notificationNode != nullptr)
     {
         _notificationNode->onExitTransitionDidStart();
@@ -1548,6 +1615,7 @@ void Director::startAnimation()
 
 void Director::startAnimation(SetIntervalReason reason)
 {
+    requestRender(RenderReason::Surface);
     _lastUpdate = std::chrono::steady_clock::now();
 
     _invalid = false;
@@ -1580,6 +1648,9 @@ void Director::processOperations()
 
 void Director::mainLoop()
 {
+    _didRenderLastTick = false;
+    if (_renderer)
+        _renderer->prepareForUpdates();
 #if defined(AX_PLATFORM_PC)
     processOperations();
 #endif
@@ -1601,6 +1672,8 @@ void Director::mainLoop()
         // release the objects
         PoolManager::getInstance()->getCurrentPool()->clear();
     }
+    if (_renderer)
+        _renderer->finishUpdates();
 }
 
 void Director::mainLoop(float dt)

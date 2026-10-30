@@ -423,6 +423,8 @@ public:
 protected:
     friend class Director;
     friend class GroupCommand;
+    bool _frameStarted    = false;
+    bool _updatesPrepared = false;
 
     /**
      * Create and reuse vertex and index buffer for triangleCommand.
@@ -468,9 +470,19 @@ protected:
     void drawCustomCommand(RenderCommand* command);
     void drawMeshCommand(RenderCommand* command);
 
+public:
+    /** Frame lifecycle shared by Director and backend uploads during updates. */
     bool beginFrame();  /// Indicate the begining of a frame
+    void prepareForUpdates();
+    void finishUpdates();
+    bool hasPendingCommands() const;
+    bool isFrameStarted() const { return _frameStarted; }
+    bool wasFramePresented() const;
+    bool isDrawableAvailable();
+    void setPresentationEnabled(bool enabled);
     void endFrame();    /// Finish a frame.
 
+protected:
     /// Draw the previews queued triangles and flush previous context
     void flush();
 

@@ -857,6 +857,9 @@ void PhysicsWorld::removeAllBodies()
 
 void PhysicsWorld::setDebugDrawMask(int mask)
 {
+    if (_debugDrawMask == mask)
+        return;
+    Director::getInstance()->requestRender(RenderReason::Scene);
     if (mask == DEBUGDRAW_NONE)
     {
         if (_debugDraw)

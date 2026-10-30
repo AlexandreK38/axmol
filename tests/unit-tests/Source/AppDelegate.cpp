@@ -26,6 +26,7 @@
  ****************************************************************************/
 
 #include <string>
+#include <cstdlib>
 #include "doctest.h"
 #include "AppDelegate.h"
 
@@ -95,6 +96,14 @@ void AppDelegate::applicationWillEnterForeground()
 
 
 int AppDelegate::run(int argc, char** argv) {
+    // Keep filesystem tests inside the selected build/test directory when requested.
+    if (const char* writablePath = std::getenv("AX_TEST_WRITABLE_PATH"))
+    {
+        std::string path = writablePath;
+        if (!path.empty() && path.back() != '/')
+            path.push_back('/');
+        FileUtils::getInstance()->setWritablePath(path);
+    }
     AXLOGI("Running unit tests...\n");
     fflush(stdout);
     AXLOGI("Default resource path: {}\n", FileUtils::getInstance()->getDefaultResourceRootPath());

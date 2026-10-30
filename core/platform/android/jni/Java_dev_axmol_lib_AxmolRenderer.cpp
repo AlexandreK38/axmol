@@ -40,7 +40,27 @@ extern "C" {
 
 JNIEXPORT void JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeRender(JNIEnv*, jclass)
 {
-    ax::Director::getInstance()->mainLoop();
+    auto director = Director::getInstance();
+    if (director->getRenderMode() == RenderMode::OnDemand)
+        director->requestRender(RenderReason::Surface);
+    director->mainLoop();
+}
+
+JNIEXPORT jboolean JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeTick(JNIEnv*, jclass)
+{
+    auto director = Director::getInstance();
+    director->mainLoop();
+    return director->didRenderLastTick();
+}
+
+JNIEXPORT jboolean JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeIsRenderOnDemand(JNIEnv*, jclass)
+{
+    return Director::getInstance()->getRenderMode() == RenderMode::OnDemand;
+}
+
+JNIEXPORT void JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeFramePresented(JNIEnv*, jclass)
+{
+    Director::getInstance()->notifyFramePresented(true);
 }
 
 JNIEXPORT void JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeOnPause(JNIEnv*, jclass)
@@ -57,6 +77,7 @@ JNIEXPORT void JNICALL Java_dev_axmol_lib_AxmolRenderer_nativeOnResume(JNIEnv*, 
 {
     if (Director::getInstance()->getRenderView())
     {
+        Director::getInstance()->requestRender(RenderReason::Surface);
         Application::getInstance()->applicationWillEnterForeground();
         ax::EventCustom foregroundEvent(EVENT_COME_TO_FOREGROUND);
         ax::Director::getInstance()->getEventDispatcher()->dispatchEvent(&foregroundEvent, true);

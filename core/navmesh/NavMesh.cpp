@@ -28,6 +28,7 @@
 
 #    include "platform/FileUtils.h"
 #    include "renderer/Renderer.h"
+#    include "base/Director.h"
 #    include "recast/DetourCommon.h"
 #    include "recast/DetourDebugDraw.h"
 #    include <sstream>
@@ -464,6 +465,9 @@ bool NavMesh::isDebugDrawEnabled() const
 
 void NavMesh::setDebugDrawEnable(bool enable)
 {
+    if (_isDebugDrawEnabled == enable)
+        return;
+    Director::getInstance()->requestRender(RenderReason::Scene);
     _isDebugDrawEnabled = enable;
 }
 

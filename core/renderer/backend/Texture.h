@@ -107,6 +107,11 @@ protected:
     /**
      * @param descriptor Specifies the texture descriptor.
      */
+    void markContentsDirty();
+    void markSamplerDirty(const SamplerDescriptor& sampler);
+    SamplerDescriptor _renderSampler;
+    bool _renderSamplerInitialized = false;
+
     TextureBackend() {}
     virtual ~TextureBackend();
 

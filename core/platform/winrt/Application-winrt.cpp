@@ -105,7 +105,9 @@ bool Application::frameStep(const std::function<bool()>& onFrame)
         // boost CPU to next frame accurately.
         const auto waitMS =
             static_cast<LONG>((m_nAnimationInterval.QuadPart - interval) * 1000LL / m_nFreq.QuadPart - 1L);
-        if (waitMS > 1L)
+        if (Director::getInstance()->getRenderMode() == RenderMode::OnDemand)
+            Sleep(waitMS > 0L ? waitMS + 1L : 1L);
+        else if (waitMS > 1L)
             Sleep(waitMS);
 
         return true;

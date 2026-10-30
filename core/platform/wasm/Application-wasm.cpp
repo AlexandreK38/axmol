@@ -36,6 +36,7 @@ THE SOFTWARE.
 #    include "base/Director.h"
 #    include "base/Utils.h"
 #    include "platform/FileUtils.h"
+#    include "platform/RenderViewImpl.h"
 #    include "yasio/utils.hpp"
 #    include <emscripten/emscripten.h>
 
@@ -53,6 +54,9 @@ void axmol_hdoc_visibilitychange(bool hidden)
 void axmol_webglcontextlost()
 {
     AXLOGI("receive event: webglcontextlost");
+    if (auto view = dynamic_cast<ax::RenderViewImpl*>(ax::Director::getInstance()->getRenderView()))
+        view->setContextLost(true);
+    ax::Director::getInstance()->requestRender(ax::RenderReason::Surface);
 }
 
 // webglcontextrestored
@@ -61,6 +65,8 @@ void axmol_webglcontextrestored()
     AXLOGI("receive event: webglcontextrestored");
 
     auto director = ax::Director::getInstance();
+    if (auto view = dynamic_cast<ax::RenderViewImpl*>(director->getRenderView()))
+        view->setContextLost(false);
     ax::backend::DriverBase::getInstance()->resetState();
     director->resetMatrixStack();
     ax::EventCustom recreatedEvent(EVENT_RENDERER_RECREATED);

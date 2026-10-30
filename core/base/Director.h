@@ -46,6 +46,8 @@ THE SOFTWARE.
 #endif
 
 #include "base/JobSystem.h"
+#include "base/RenderActivity.h"
+#include "base/RenderDemand.h"
 
 namespace ax
 {
@@ -97,11 +99,11 @@ public:
     static const char* EVENT_AFTER_UPDATE;
     /** Director will trigger an event while resetting Director */
     static const char* EVENT_RESET;
-    /** Director will trigger an event after Scene::render() is invoked. */
+    /** Triggered after Scene::render(); skipped on update-only ticks in OnDemand mode. */
     static const char* EVENT_AFTER_VISIT;
     /** Director will trigger an event after a scene is drawn, the data is sent to GPU. */
     static const char* EVENT_AFTER_DRAW;
-    /** Director will trigger an event before a scene is drawn, right after clear. */
+    /** Triggered before scene rendering, after queuing clear; skipped on update-only ticks. */
     static const char* EVENT_BEFORE_DRAW;
 
     /**
@@ -151,10 +153,31 @@ public:
     /** Sets the FPS value. FPS = 1/interval. */
     void setAnimationInterval(float interval);
 
+    /** Sets the rendering policy on the engine thread. The default is Continuous. */
+    void setRenderMode(RenderMode mode);
+    RenderMode getRenderMode() const { return _renderMode; }
+    /** Requests a frame from any thread. Scene and resource mutations still require the engine thread. */
+    void requestRender(RenderReason reason = RenderReason::Explicit) { _renderDemand->request(reason); }
+    bool isRenderRequested() const { return _renderDemand->needed(_renderMode); }
+    uint32_t getPendingRenderReasons() const { return _renderDemand->pending(); }
+    RenderActivity acquireRenderActivity() { return RenderActivity(_renderDemand); }
+    /** Returns a render request callback that remains safe after Director destruction. */
+    std::function<void()> getRenderRequestCallback(RenderReason reason = RenderReason::Explicit) const;
+    const RenderDiagnostics& getRenderDiagnostics() const { return _renderDiagnostics; }
+    bool didRenderLastTick() const { return _didRenderLastTick; }
+    bool isDrawingScene() const { return _isDrawingScene; }
+    /** Records the result of a platform presentation on the engine thread. */
+    void notifyFramePresented(bool success);
+
     /** Whether the FPS on the bottom-left corner of the screen is displayed or not. */
     bool isStatsDisplay() { return _statsDisplay; }
     /** Display the FPS on the bottom-left corner of the screen. */
-    void setStatsDisplay(bool displayStats) { _statsDisplay = displayStats; }
+    void setStatsDisplay(bool displayStats)
+    {
+        if (_statsDisplay != displayStats)
+            requestRender(RenderReason::Scene);
+        _statsDisplay = displayStats;
+    }
 
     /** Gets the seconds per frame. */
     float getSecondsPerFrame() { return _secondsPerFrame; }
@@ -666,6 +689,14 @@ protected:
 
     /* Renderer for the Director */
     Renderer* _renderer = nullptr;
+
+    RenderMode _renderMode                      = RenderMode::Continuous;
+    std::shared_ptr<RenderDemand> _renderDemand = std::make_shared<RenderDemand>();
+    RenderDiagnostics _renderDiagnostics;
+    uint32_t _presentationReasons = 0;
+    bool _presentationPending     = false;
+    bool _didRenderLastTick       = false;
+    bool _isDrawingScene          = false;
 
     Color4F _clearColor = {0, 0, 0, 1};
 #ifdef AX_ENABLE_CONSOLE

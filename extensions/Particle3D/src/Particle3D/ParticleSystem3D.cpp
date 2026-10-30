@@ -23,6 +23,7 @@
  THE SOFTWARE.
  ****************************************************************************/
 
+#include "base/Director.h"
 #include "ParticleSystem3D.h"
 #include "Particle3DEmitter.h"
 #include "Particle3DAffector.h"
@@ -152,6 +153,8 @@ void ParticleSystem3D::update(float delta)
     if (_state != State::RUNNING)
         return;
 
+    if (getAliveParticleCount())
+        _director->requestRender(RenderReason::Geometry);
     Particle3D* particle = _particlePool.getFirst();
     while (particle)
     {

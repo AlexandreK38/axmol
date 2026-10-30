@@ -282,6 +282,9 @@ void LayerGradient::setStartColor(const Color3B& color)
 
 void LayerGradient::setEndColor(const Color3B& color)
 {
+    if (_endColor == color)
+        return;
+    _director->requestRender(RenderReason::Node);
     _endColor = color;
     updateColor();
 }
@@ -293,6 +296,9 @@ const Color3B& LayerGradient::getEndColor() const
 
 void LayerGradient::setStartOpacity(uint8_t o)
 {
+    if (_startOpacity == o)
+        return;
+    _director->requestRender(RenderReason::Node);
     _startOpacity = o;
     updateColor();
 }
@@ -304,6 +310,9 @@ uint8_t LayerGradient::getStartOpacity() const
 
 void LayerGradient::setEndOpacity(uint8_t o)
 {
+    if (_endOpacity == o)
+        return;
+    _director->requestRender(RenderReason::Node);
     _endOpacity = o;
     updateColor();
 }
@@ -315,6 +324,9 @@ uint8_t LayerGradient::getEndOpacity() const
 
 void LayerGradient::setVector(const Vec2& var)
 {
+    if (_alongVector == var)
+        return;
+    _director->requestRender(RenderReason::Node);
     _alongVector = var;
     updateColor();
 }
@@ -331,6 +343,9 @@ bool LayerGradient::isCompressedInterpolation() const
 
 void LayerGradient::setCompressedInterpolation(bool compress)
 {
+    if (_compressedInterpolation == compress)
+        return;
+    _director->requestRender(RenderReason::Node);
     _compressedInterpolation = compress;
     updateColor();
 }
@@ -456,6 +471,9 @@ void LayerRadialGradient::setContentSize(const Vec2& size)
 
 void LayerRadialGradient::setStartOpacity(uint8_t opacity)
 {
+    if (_startColor.a == opacity)
+        return;
+    _director->requestRender(RenderReason::Node);
     _startColorRend.a = opacity / 255.0f;
     _startColor.a     = opacity;
 }
@@ -467,6 +485,9 @@ uint8_t LayerRadialGradient::getStartOpacity() const
 
 void LayerRadialGradient::setEndOpacity(uint8_t opacity)
 {
+    if (_endColor.a == opacity)
+        return;
+    _director->requestRender(RenderReason::Node);
     _endColorRend.a = opacity / 255.0f;
     _endColor.a     = opacity;
 }
@@ -478,6 +499,9 @@ uint8_t LayerRadialGradient::getEndOpacity() const
 
 void LayerRadialGradient::setRadius(float radius)
 {
+    if (_radius == radius)
+        return;
+    _director->requestRender(RenderReason::Node);
     _radius = radius;
 }
 
@@ -488,6 +512,9 @@ float LayerRadialGradient::getRadius() const
 
 void LayerRadialGradient::setCenter(const Vec2& center)
 {
+    if (_center == center)
+        return;
+    _director->requestRender(RenderReason::Node);
     _center = center;
 }
 
@@ -498,6 +525,9 @@ Vec2 LayerRadialGradient::getCenter() const
 
 void LayerRadialGradient::setExpand(float expand)
 {
+    if (_expand == expand)
+        return;
+    _director->requestRender(RenderReason::Node);
     _expand = expand;
 }
 
@@ -513,6 +543,9 @@ void LayerRadialGradient::setStartColor(const Color3B& color)
 
 void LayerRadialGradient::setStartColor(const ax::Color4B& color)
 {
+    if (_startColor == color)
+        return;
+    _director->requestRender(RenderReason::Node);
     _startColor = color;
     convertColor4B24F(_startColorRend, _startColor);
 }
@@ -534,6 +567,9 @@ void LayerRadialGradient::setEndColor(const Color3B& color)
 
 void LayerRadialGradient::setEndColor(const ax::Color4B& color)
 {
+    if (_endColor == color)
+        return;
+    _director->requestRender(RenderReason::Node);
     _endColor = color;
     convertColor4B24F(_endColorRend, _endColor);
 }
@@ -550,6 +586,9 @@ Color3B LayerRadialGradient::getEndColor3B() const
 
 void LayerRadialGradient::setBlendFunc(const BlendFunc& blendFunc)
 {
+    if (_blendFunc == blendFunc)
+        return;
+    _director->requestRender(RenderReason::Node);
     _blendFunc = blendFunc;
 }
 

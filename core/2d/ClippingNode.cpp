@@ -259,6 +259,7 @@ void ClippingNode::setStencil(Node* stencil, bool uniqueChildStencils)
     // early out if the stencil is already set
     if (_stencil == stencil)
         return;
+    _director->requestRender(RenderReason::Node);
 
 #if AX_ENABLE_GC_FOR_NATIVE_OBJECTS
     auto sEngine = ScriptEngineManager::getInstance()->getScriptEngine();
@@ -330,6 +331,9 @@ float ClippingNode::getAlphaThreshold() const
 
 void ClippingNode::setAlphaThreshold(float alphaThreshold)
 {
+    if (alphaThreshold == getAlphaThreshold())
+        return;
+    _director->requestRender(RenderReason::Node);
     if (alphaThreshold == 1 && alphaThreshold != _stencilStateManager->getAlphaThreshold())
     {
         // should reset program used by _stencil
@@ -346,19 +350,31 @@ bool ClippingNode::isInverted() const
 
 void ClippingNode::setInverted(bool inverted)
 {
+    if (inverted == isInverted())
+        return;
+    _director->requestRender(RenderReason::Node);
     _stencilStateManager->setInverted(inverted);
 }
 
 void ClippingNode::setProgramStateRecursively(Node* node, backend::ProgramState* programState)
 {
-    if (_originalStencilProgramState.find(node) == _originalStencilProgramState.end())
+    const bool knownStencil = _originalStencilProgramState.find(node) != _originalStencilProgramState.end();
+    if (!knownStencil)
     {
         auto* existingProgramState = node->getProgramState();
         AX_SAFE_RETAIN(existingProgramState);
         _originalStencilProgramState[node] = existingProgramState;
     }
 
-    if (_uniqueChildStencils)
+    auto currentState = node->getProgramState();
+    if (knownStencil && currentState && currentState->getProgram() == programState->getProgram())
+    {
+        // Rebinding a freshly allocated identical program state during every
+        // visit would invalidate the scene forever in OnDemand mode.
+        const auto alpha = getAlphaThreshold();
+        currentState->setUniform(currentState->getUniformLocation("u_alpha_value"), &alpha, sizeof(alpha));
+    }
+    else if (_uniqueChildStencils)
     {
         node->setProgramState(programState->clone(), true);
     }

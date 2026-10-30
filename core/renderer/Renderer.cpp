@@ -237,6 +237,9 @@ void Renderer::addCommand(RenderCommand* command)
 
 void Renderer::addCommand(RenderCommand* command, int renderQueueID)
 {
+    auto director = Director::getInstance();
+    if (!director->isDrawingScene())
+        director->requestRender(RenderReason::Offscreen);
     AXASSERT(!_isRendering, "Cannot add command while rendering");
     AXASSERT(renderQueueID >= 0, "Invalid render queue");
     AXASSERT(command->getType() != RenderCommand::Type::UNKNOWN_COMMAND, "Invalid Command Type");
@@ -404,6 +407,8 @@ void Renderer::doVisitRenderQueue(const std::vector<RenderCommand*>& renderComma
 
 void Renderer::render()
 {
+    if (!beginFrame())
+        return;
     // TODO: setup camera or MVP
     _isRendering = true;
 
@@ -421,12 +426,60 @@ void Renderer::render()
 
 bool Renderer::beginFrame()
 {
-    return _commandBuffer->beginFrame();
+    if (!_frameStarted)
+    {
+        prepareForUpdates();
+        _frameStarted = _commandBuffer->beginFrame();
+    }
+    return _frameStarted;
+}
+
+void Renderer::prepareForUpdates()
+{
+    if (_commandBuffer && !_updatesPrepared)
+    {
+        _commandBuffer->prepareForUpdates();
+        _updatesPrepared = true;
+    }
+}
+
+void Renderer::finishUpdates()
+{
+    if (_commandBuffer && _updatesPrepared)
+        _commandBuffer->finishUpdates();
+    _updatesPrepared = false;
+}
+
+bool Renderer::hasPendingCommands() const
+{
+    for (const auto& queue : _renderGroups)
+        if (queue.size())
+            return true;
+    return false;
+}
+
+bool Renderer::wasFramePresented() const
+{
+    return _commandBuffer->wasFramePresented();
+}
+
+bool Renderer::isDrawableAvailable()
+{
+    return _commandBuffer && _commandBuffer->isDrawableAvailable();
+}
+
+void Renderer::setPresentationEnabled(bool enabled)
+{
+    if (_commandBuffer)
+        _commandBuffer->setPresentationEnabled(enabled);
 }
 
 void Renderer::endFrame()
 {
+    if (!_frameStarted)
+        return;
     _commandBuffer->endFrame();
+    _frameStarted = false;
 
 #ifdef AX_USE_METAL
     _triangleCommandBufferManager.putbackAllBuffers();
@@ -822,6 +875,13 @@ bool Renderer::checkVisibility(const Mat4& transform, const Vec2& size)
 void Renderer::readPixels(backend::RenderTarget* rt,
                           std::function<void(const backend::PixelBufferDescriptor&)> callback)
 {
+    if (!Director::getInstance()->isDrawingScene())
+        Director::getInstance()->requestRender(RenderReason::Offscreen);
+    if (!beginFrame())
+    {
+        callback(backend::PixelBufferDescriptor{});
+        return;
+    }
     assert(!!rt);
     if (rt ==
         _defaultRT)  // read pixels from screen, metal renderer backend: screen texture must not be a framebufferOnly

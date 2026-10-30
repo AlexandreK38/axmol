@@ -101,6 +101,7 @@ void captureScreen(std::function<void(RefPtr<Image>)> imageCallback)
     }
 
     auto director        = Director::getInstance();
+    director->requestRender(RenderReason::Offscreen);
     auto renderer        = director->getRenderer();
     auto eventDispatcher = director->getEventDispatcher();
 
@@ -190,6 +191,7 @@ void captureNode(Node* startNode, std::function<void(RefPtr<Image>)> imageCallba
         Director::getInstance()->getEventDispatcher()->addCustomEventListener(Director::EVENT_BEFORE_DRAW, callback);
 
     s_captureNodeListener[startNode] = listener;
+    Director::getInstance()->requestRender(RenderReason::Offscreen);
 }
 
 // [DEPRECATED]

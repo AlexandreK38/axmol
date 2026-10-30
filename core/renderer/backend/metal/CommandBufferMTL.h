@@ -74,6 +74,11 @@ public:
      * Then start schedule available MTLBuffer
      */
     bool beginFrame() override;
+    void prepareForUpdates() override;
+    void finishUpdates() override;
+    bool wasFramePresented() const override { return _framePresented; }
+    bool isDrawableAvailable() override;
+    void setPresentationEnabled(bool enabled) override { _presentationEnabled = enabled; }
 
     /**
      * Create a MTLRenderCommandEncoder object for graphics rendering to an attachment in a RenderPassDescriptor.
@@ -239,6 +244,11 @@ private:
     void flushCaptureCommands();
     void updateRenderCommandEncoder(const RenderTarget* renderTarget, const RenderPassDescriptor& renderPassParams);
 
+    bool _updatesPrepared                         = false;
+    bool _framePresented                          = false;
+    bool _presentationEnabled                     = true;
+    id<CAMetalDrawable> _screenDrawable           = nil;
+    bool _screenPassAttempted                     = false;
     id<MTLCommandBuffer> _mtlCommandBuffer        = nil;
     id<MTLCommandQueue> _mtlCommandQueue          = nil;
     id<MTLRenderCommandEncoder> _mtlRenderEncoder = nil;

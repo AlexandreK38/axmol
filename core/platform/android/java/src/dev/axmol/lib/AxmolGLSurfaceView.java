@@ -60,6 +60,88 @@ public class AxmolGLSurfaceView extends GLSurfaceView {
     private static TextInputWrapper sTextInputWraper;
 
     private AxmolRenderer mRenderer;
+
+    // UI thread owns scheduling; every native tick runs on GLSurfaceView's GL thread.
+    private final Handler mTickHandler = new Handler(android.os.Looper.getMainLooper());
+    private boolean mEngineTicksActive;
+    private volatile boolean mOnDemandRendering;
+    private long mNextTickNanos;
+    private volatile boolean mTickQueued;
+    private final Runnable mEngineTick = new Runnable() {
+        @Override
+        public void run()
+        {
+            if (!mEngineTicksActive || !mOnDemandRendering) return;
+            if (!mTickQueued)
+            {
+                mTickQueued = true;
+                queueEvent(new Runnable() {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            mRenderer.tickOnDemand();
+                        }
+                        finally
+                        {
+                            mTickQueued = false;
+                        }
+                    }
+                });
+            }
+            long now       = System.nanoTime();
+            mNextTickNanos = Math.max(mNextTickNanos + AxmolRenderer.getTickIntervalNanos(), now);
+            mTickHandler.postDelayed(this, Math.max(1L, (mNextTickNanos - now + 999999L) / 1000000L));
+        }
+    };
+
+    public void synchronizeRenderMode(final boolean onDemand)
+    {
+        if (mOnDemandRendering == onDemand) return;
+        mTickHandler.post(new Runnable() {
+            @Override
+            public void run()
+            {
+                if (mOnDemandRendering != onDemand)
+                {
+                    mOnDemandRendering = onDemand;
+                    updateTickMode();
+                }
+            }
+        });
+    }
+
+    public void resumeRendering()
+    {
+        mEngineTicksActive = true;
+        updateTickMode();
+    }
+
+    public void pauseRendering()
+    {
+        mEngineTicksActive = false;
+        updateTickMode();
+    }
+
+    private void updateTickMode()
+    {
+        setRenderMode(mEngineTicksActive && !mOnDemandRendering ? RENDERMODE_CONTINUOUSLY : RENDERMODE_WHEN_DIRTY);
+        mTickHandler.removeCallbacks(mEngineTick);
+        if (mEngineTicksActive && mOnDemandRendering)
+        {
+            mNextTickNanos = System.nanoTime();
+            mTickHandler.post(mEngineTick);
+        }
+    }
+
+    @Override
+    public void surfaceDestroyed(android.view.SurfaceHolder holder)
+    {
+        if (mRenderer != null) mRenderer.surfaceUnavailable();
+        super.surfaceDestroyed(holder);
+    }
+
     private AxmolEditBox mEditText;
 
     private boolean mSoftKeyboardShown = false;

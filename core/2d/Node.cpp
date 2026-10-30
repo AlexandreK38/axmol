@@ -251,13 +251,19 @@ float Node::getSkewX() const
     return _skewX;
 }
 
+void Node::requestTransformUpdate()
+{
+    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _director->requestRender(RenderReason::Node);
+}
+
 void Node::setSkewX(float skewX)
 {
     if (_skewX == skewX)
         return;
 
-    _skewX            = skewX;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _skewX = skewX;
+    requestTransformUpdate();
 }
 
 float Node::getSkewY() const
@@ -270,8 +276,8 @@ void Node::setSkewY(float skewY)
     if (_skewY == skewY)
         return;
 
-    _skewY            = skewY;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _skewY = skewY;
+    requestTransformUpdate();
 }
 
 void Node::setLocalZOrder(int z)
@@ -292,11 +298,14 @@ void Node::setLocalZOrder(int z)
 /// used internally to alter the zOrder variable. DON'T call this method manually
 void Node::_setLocalZOrder(int z)
 {
+    if (_localZOrder != z)
+        _director->requestRender(RenderReason::Node);
     _localZOrder = z;
 }
 
 void Node::updateOrderOfArrival()
 {
+    _director->requestRender(RenderReason::Node);
     _orderOfArrival = (++s_globalOrderOfArrival);
 }
 
@@ -304,6 +313,7 @@ void Node::setGlobalZOrder(float globalZOrder)
 {
     if (_globalZOrder != globalZOrder)
     {
+        _director->requestRender(RenderReason::Node);
         _globalZOrder = globalZOrder;
         _eventDispatcher->setDirtyForNode(this);
     }
@@ -323,7 +333,7 @@ void Node::setRotation(float rotation)
         return;
 
     _rotationZ_X = _rotationZ_Y = rotation;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    requestTransformUpdate();
 
     updateRotationQuat();
 }
@@ -338,7 +348,7 @@ void Node::setRotation3D(const Vec3& rotation)
     if (_rotationX == rotation.x && _rotationY == rotation.y && _rotationZ_X == rotation.z)
         return;
 
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    requestTransformUpdate();
 
     _rotationX = rotation.x;
     _rotationY = rotation.y;
@@ -389,9 +399,12 @@ void Node::updateRotation3D()
 
 void Node::setRotationQuat(const Quaternion& quat)
 {
+    if (_rotationZ_X == _rotationZ_Y && _rotationQuat.x == quat.x && _rotationQuat.y == quat.y &&
+        _rotationQuat.z == quat.z && _rotationQuat.w == quat.w)
+        return;
     _rotationQuat = quat;
     updateRotation3D();
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    requestTransformUpdate();
 }
 
 Quaternion Node::getRotationQuat() const
@@ -404,8 +417,8 @@ void Node::setRotationSkewX(float rotationX)
     if (_rotationZ_X == rotationX)
         return;
 
-    _rotationZ_X      = rotationX;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _rotationZ_X = rotationX;
+    requestTransformUpdate();
 
     updateRotationQuat();
 }
@@ -420,8 +433,8 @@ void Node::setRotationSkewY(float rotationY)
     if (_rotationZ_Y == rotationY)
         return;
 
-    _rotationZ_Y      = rotationY;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _rotationZ_Y = rotationY;
+    requestTransformUpdate();
 
     updateRotationQuat();
 }
@@ -440,7 +453,7 @@ void Node::setScale(float scale)
         return;
 
     _scaleX = _scaleY = _scaleZ = scale;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    requestTransformUpdate();
 }
 
 /// scaleX getter
@@ -455,9 +468,9 @@ void Node::setScale(float scaleX, float scaleY)
     if (_scaleX == scaleX && _scaleY == scaleY)
         return;
 
-    _scaleX           = scaleX;
-    _scaleY           = scaleY;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _scaleX = scaleX;
+    _scaleY = scaleY;
+    requestTransformUpdate();
 }
 
 /// scaleX setter
@@ -466,8 +479,8 @@ void Node::setScaleX(float scaleX)
     if (_scaleX == scaleX)
         return;
 
-    _scaleX           = scaleX;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _scaleX = scaleX;
+    requestTransformUpdate();
 }
 
 /// scaleY getter
@@ -482,8 +495,8 @@ void Node::setScaleZ(float scaleZ)
     if (_scaleZ == scaleZ)
         return;
 
-    _scaleZ           = scaleZ;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _scaleZ = scaleZ;
+    requestTransformUpdate();
 }
 
 /// scaleY getter
@@ -498,8 +511,8 @@ void Node::setScaleY(float scaleY)
     if (_scaleY == scaleY)
         return;
 
-    _scaleY           = scaleY;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    _scaleY = scaleY;
+    requestTransformUpdate();
 }
 
 /// position getter
@@ -528,8 +541,8 @@ void Node::setPosition(float x, float y)
     _position.x = x;
     _position.y = y;
 
-    _transformUpdated = _transformDirty = _inverseDirty = true;
-    _usingNormalizedPosition                            = false;
+    requestTransformUpdate();
+    _usingNormalizedPosition = false;
 }
 
 void Node::setPosition3D(const Vec3& position)
@@ -573,7 +586,7 @@ void Node::setPositionZ(float positionZ)
     if (_positionZ == positionZ)
         return;
 
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    requestTransformUpdate();
 
     _positionZ = positionZ;
 }
@@ -593,7 +606,7 @@ void Node::setPositionNormalized(const Vec2& position)
     _normalizedPosition      = position;
     _usingNormalizedPosition = true;
     _normalizedPositionDirty = true;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    requestTransformUpdate();
 }
 
 ssize_t Node::getChildrenCount() const
@@ -613,6 +626,7 @@ void Node::setVisible(bool visible)
     if (visible != _visible)
     {
         _visible = visible;
+        _director->requestRender(RenderReason::Node);
         if (_visible)
             _transformUpdated = _transformDirty = _inverseDirty = true;
     }
@@ -635,7 +649,7 @@ void Node::setAnchorPoint(const Vec2& point)
     {
         _anchorPoint = point;
         _anchorPointInPoints.set(_contentSize.width * _anchorPoint.x, _contentSize.height * _anchorPoint.y);
-        _transformUpdated = _transformDirty = _inverseDirty = true;
+        requestTransformUpdate();
     }
 }
 
@@ -652,7 +666,8 @@ void Node::setContentSize(const Vec2& size)
         _contentSize = size;
 
         _anchorPointInPoints.set(_contentSize.width * _anchorPoint.x, _contentSize.height * _anchorPoint.y);
-        _transformUpdated = _transformDirty = _inverseDirty = _contentSizeDirty = true;
+        _contentSizeDirty = true;
+        requestTransformUpdate();
     }
 }
 
@@ -672,9 +687,9 @@ bool Node::isRunning() const
 /// parent setter
 void Node::setParent(Node* parent)
 {
-    _parent           = parent;
+    _parent                  = parent;
     _normalizedPositionDirty = true;
-    _transformUpdated = _transformDirty = _inverseDirty = true;
+    requestTransformUpdate();
 }
 
 /// isRelativeAnchorPoint getter
@@ -689,7 +704,7 @@ void Node::setIgnoreAnchorPointForPosition(bool newValue)
     if (newValue != _ignoreAnchorPointForPosition)
     {
         _ignoreAnchorPointForPosition = newValue;
-        _transformUpdated = _transformDirty = _inverseDirty = true;
+        requestTransformUpdate();
     }
 }
 
@@ -1194,6 +1209,7 @@ void Node::insertChild(Node* child, int z)
     }
 #endif  // AX_ENABLE_GC_FOR_NATIVE_OBJECTS
     _transformUpdated  = true;
+    _director->requestRender(RenderReason::Node);
     _reorderChildDirty = true;
     _children.pushBack(child);
     child->_setLocalZOrder(z);
@@ -1202,6 +1218,7 @@ void Node::insertChild(Node* child, int z)
 void Node::reorderChild(Node* child, int zOrder)
 {
     AXASSERT(child != nullptr, "Child must be non-nil");
+    _director->requestRender(RenderReason::Node);
     _reorderChildDirty = true;
     child->updateOrderOfArrival();
     child->_setLocalZOrder(zOrder);
@@ -1805,6 +1822,10 @@ const Mat4& Node::getNodeToParentTransform() const
 
 void Node::setNodeToParentTransform(const Mat4& transform)
 {
+    const auto& baseTransform = _additionalTransform ? _additionalTransform[1] : _transform;
+    if (!_transformDirty && memcmp(baseTransform.m, transform.m, sizeof(transform.m)) == 0)
+        return;
+    _director->requestRender(RenderReason::Node);
     _transform        = transform;
     _transformDirty   = false;
     _transformUpdated = true;
@@ -1823,6 +1844,11 @@ void Node::setAdditionalTransform(const AffineTransform& additionalTransform)
 
 void Node::setAdditionalTransform(const Mat4* additionalTransform)
 {
+    if ((!additionalTransform && !_additionalTransform) ||
+        (additionalTransform && _additionalTransform &&
+         memcmp(_additionalTransform[0].m, additionalTransform->m, sizeof(additionalTransform->m)) == 0))
+        return;
+    _director->requestRender(RenderReason::Node);
     if (additionalTransform == nullptr)
     {
         if (_additionalTransform)
@@ -2024,6 +2050,9 @@ uint8_t Node::getDisplayedOpacity() const
 
 void Node::setOpacity(uint8_t opacity)
 {
+    if (_realOpacity == opacity)
+        return;
+    _director->requestRender(RenderReason::Node);
     _displayedOpacity = _realOpacity = opacity;
 
     updateCascadeOpacity();
@@ -2031,7 +2060,10 @@ void Node::setOpacity(uint8_t opacity)
 
 void Node::updateDisplayedOpacity(uint8_t parentOpacity)
 {
-    _displayedOpacity = _realOpacity * parentOpacity / 255.0;
+    const uint8_t displayedOpacity = _realOpacity * parentOpacity / 255.0;
+    if (_displayedOpacity != displayedOpacity)
+        _director->requestRender(RenderReason::Node);
+    _displayedOpacity = displayedOpacity;
     updateColor();
 
     if (_cascadeOpacityEnabled)
@@ -2055,6 +2087,7 @@ void Node::setCascadeOpacityEnabled(bool cascadeOpacityEnabled)
         return;
     }
 
+    _director->requestRender(RenderReason::Node);
     _cascadeOpacityEnabled = cascadeOpacityEnabled;
 
     if (cascadeOpacityEnabled)
@@ -2108,6 +2141,9 @@ const Color3B& Node::getDisplayedColor() const
 
 void Node::setColor(const Color3B& color)
 {
+    if (_realColor == color)
+        return;
+    _director->requestRender(RenderReason::Node);
     _displayedColor = _realColor = color;
 
     updateCascadeColor();
@@ -2115,9 +2151,12 @@ void Node::setColor(const Color3B& color)
 
 void Node::updateDisplayedColor(const Color3B& parentColor)
 {
+    const auto oldColor = _displayedColor;
     _displayedColor.r = _realColor.r * parentColor.r / 255.0;
     _displayedColor.g = _realColor.g * parentColor.g / 255.0;
     _displayedColor.b = _realColor.b * parentColor.b / 255.0;
+    if (_displayedColor != oldColor)
+        _director->requestRender(RenderReason::Node);
     updateColor();
 
     if (_cascadeColorEnabled)
@@ -2141,6 +2180,7 @@ void Node::setCascadeColorEnabled(bool cascadeColorEnabled)
         return;
     }
 
+    _director->requestRender(RenderReason::Node);
     _cascadeColorEnabled = cascadeColorEnabled;
 
     if (_cascadeColorEnabled)
@@ -2228,6 +2268,8 @@ void Node::applyMaskOnEnter(bool applyChildren)
 // MARK: Camera
 void Node::setCameraMask(unsigned short mask, bool applyChildren)
 {
+    if (_cameraMask != mask)
+        _director->requestRender(RenderReason::Node);
     _cameraMask = mask;
     if (applyChildren)
     {
@@ -2254,6 +2296,7 @@ bool Node::setProgramState(backend::ProgramState* programState, bool ownPS/* = f
 {
     if (_programState != programState)
     {
+        _director->requestRender(RenderReason::Resource);
         AX_SAFE_RELEASE(_programState);
         _programState = programState;
         if (!ownPS)

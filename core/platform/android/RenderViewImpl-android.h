@@ -45,6 +45,7 @@ public:
     bool isGfxContextReady() override;
     void end() override;
     void swapBuffers() override;
+    bool isPresentationDeferred() const override { return true; }
     void setIMEKeyboardState(bool bOpen) override;
     virtual Rect getSafeAreaRect() const override;
 

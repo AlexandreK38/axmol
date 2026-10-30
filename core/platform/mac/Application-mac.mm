@@ -78,7 +78,9 @@ int Application::run()
         renderView->pollEvents();
 
         auto interval = std::chrono::steady_clock::now() - lastTime;
-        auto waitDuration = _animationInterval - interval - _1ms;
+        auto waitDuration = _animationInterval - interval;
+        if (director->getRenderMode() == RenderMode::Continuous)
+            waitDuration -= _1ms;
         if (waitDuration.count() > 0)
             std::this_thread::sleep_for(waitDuration);
         else

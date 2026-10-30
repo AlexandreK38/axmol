@@ -1324,7 +1324,7 @@ bool RichText::setString(std::string_view text)
 {
     if (_text != text)
     {
-        _formatTextDirty = true;
+        requestFormatText();
 
         _richElements.clear();
         _text = text;
@@ -1349,25 +1349,25 @@ void RichText::initRenderer() {}
 void RichText::insertElement(RichElement* element, int index)
 {
     _richElements.insert(index, element);
-    _formatTextDirty = true;
+    requestFormatText();
 }
 
 void RichText::pushBackElement(RichElement* element)
 {
     _richElements.pushBack(element);
-    _formatTextDirty = true;
+    requestFormatText();
 }
 
 void RichText::removeElement(int index)
 {
     _richElements.erase(index);
-    _formatTextDirty = true;
+    requestFormatText();
 }
 
 void RichText::removeElement(RichElement* element)
 {
     _richElements.eraseObject(element);
-    _formatTextDirty = true;
+    requestFormatText();
 }
 
 RichText::WrapMode RichText::getWrapMode() const
@@ -1380,7 +1380,7 @@ void RichText::setWrapMode(RichText::WrapMode wrapMode)
     if (static_cast<RichText::WrapMode>(_defaults.at(KEY_WRAP_MODE).asInt()) != wrapMode)
     {
         _defaults[KEY_WRAP_MODE] = static_cast<int>(wrapMode);
-        _formatTextDirty         = true;
+        requestFormatText();
     }
 }
 
@@ -1394,7 +1394,7 @@ void RichText::setHorizontalAlignment(ax::ui::RichText::HorizontalAlignment a)
     if (static_cast<RichText::HorizontalAlignment>(_defaults.at(KEY_HORIZONTAL_ALIGNMENT).asInt()) != a)
     {
         _defaults[KEY_HORIZONTAL_ALIGNMENT] = static_cast<int>(a);
-        _formatTextDirty                    = true;
+        requestFormatText();
     }
 }
 
@@ -1408,7 +1408,7 @@ void RichText::setVerticalAlignment(ax::ui::RichText::VerticalAlignment a)
     if (static_cast<RichText::VerticalAlignment>(_defaults.at(KEY_VERTICAL_ALIGNMENT).asInt()) != a)
     {
         _defaults[KEY_VERTICAL_ALIGNMENT] = static_cast<int>(a);
-        _formatTextDirty                  = true;
+        requestFormatText();
     }
 }
 
@@ -1736,6 +1736,12 @@ void RichText::openUrl(std::string_view url)
 void RichText::setOpenUrlHandler(const OpenUrlHandler& handleOpenUrl)
 {
     _handleOpenUrl = handleOpenUrl;
+}
+
+void RichText::requestFormatText()
+{
+    _formatTextDirty = true;
+    _director->requestRender(RenderReason::Geometry);
 }
 
 void RichText::formatText(bool force)
@@ -2473,7 +2479,7 @@ void RichText::ignoreContentAdaptWithSize(bool ignore)
 {
     if (_ignoreSize != ignore)
     {
-        _formatTextDirty = true;
+        requestFormatText();
         Widget::ignoreContentAdaptWithSize(ignore);
     }
 }

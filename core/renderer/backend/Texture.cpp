@@ -24,14 +24,31 @@
  ****************************************************************************/
 
 #include "Texture.h"
+#include "base/Director.h"
 #include "PixelFormatUtils.h"
 #include <cassert>
 NS_AX_BACKEND_BEGIN
 
 TextureBackend::~TextureBackend() {}
 
+void TextureBackend::markContentsDirty()
+{
+    ax::Director::getInstance()->requestRender(ax::RenderReason::Texture);
+}
+
+void TextureBackend::markSamplerDirty(const SamplerDescriptor& sampler)
+{
+    if (!_renderSamplerInitialized || _renderSampler.magFilter != sampler.magFilter ||
+        _renderSampler.minFilter != sampler.minFilter || _renderSampler.sAddressMode != sampler.sAddressMode ||
+        _renderSampler.tAddressMode != sampler.tAddressMode)
+        markContentsDirty();
+    _renderSampler            = sampler;
+    _renderSamplerInitialized = true;
+}
+
 void TextureBackend::updateTextureDescriptor(const ax::backend::TextureDescriptor& descriptor, int /*index*/)
 {
+    markContentsDirty();
     _bitsPerPixel  = PixelFormatUtils::getBitsPerPixel(descriptor.textureFormat);
     _textureType   = descriptor.textureType;
     _textureFormat = descriptor.textureFormat;

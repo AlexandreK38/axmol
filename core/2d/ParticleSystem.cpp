@@ -1560,6 +1560,8 @@ void ParticleSystem::update(float dt)
     if (!_visible)
         return;
 
+    if (_particleCount || (_isActive && _emissionRate > 0))
+        _director->requestRender(RenderReason::Geometry);
     AX_PROFILER_START_CATEGORY(kProfilerCategoryParticles, "CCParticleSystem - update");
 
     if (_componentContainer && !_componentContainer->isEmpty())

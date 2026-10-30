@@ -22,6 +22,7 @@
 
 #include "platform/winrt/RenderViewImpl-winrt.h"
 #include "platform/Application.h"
+#include "base/Director.h"
 
 #include "yasio/wtimer_hres.hpp"
 
@@ -321,6 +322,7 @@ void OpenGLESPage::StartRenderLoop()
             ProcessOperations();
 
             mOpenGLES->GetSurfaceDimensions(mRenderSurface, &panelWidth, &panelHeight);
+            const auto framesBeforeTick = Director::getInstance()->getRenderDiagnostics().frames;
             mRenderer->Draw(panelWidth, panelHeight, mDpi, mOrientation);
 
             // Recreate input dispatch
@@ -340,11 +342,16 @@ void OpenGLESPage::StartRenderLoop()
                 return false;
             }
 
+            // frameStep still paces update-only ticks; XAML must not swap those ticks.
+            if (Director::getInstance()->getRenderDiagnostics().frames == framesBeforeTick)
+                return true;
+
             EGLBoolean result = GL_FALSE;
             {
                 critical_section::scoped_lock lock(mRenderSurfaceCriticalSection);
                 result = mOpenGLES->SwapBuffers(mRenderSurface);
             }
+            Director::getInstance()->notifyFramePresented(result == GL_TRUE);
 
             if (result != GL_TRUE)
             {

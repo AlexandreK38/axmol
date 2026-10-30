@@ -30,6 +30,13 @@
 namespace ax
 {
 
+void ClippingRectangleNode::setClippingEnabled(bool enabled)
+{
+    if (_clippingEnabled != enabled)
+        _director->requestRender(RenderReason::Node);
+    _clippingEnabled = enabled;
+}
+
 ClippingRectangleNode* ClippingRectangleNode::create(const Rect& clippingRegion)
 {
     ClippingRectangleNode* node = new ClippingRectangleNode();
@@ -57,6 +64,9 @@ ClippingRectangleNode* ClippingRectangleNode::create()
 
 void ClippingRectangleNode::setClippingRegion(const Rect& clippingRegion)
 {
+    if (_clippingRegion.equals(clippingRegion))
+        return;
+    _director->requestRender(RenderReason::Node);
     _clippingRegion = clippingRegion;
 }
 

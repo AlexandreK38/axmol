@@ -207,6 +207,7 @@ TextureMTL::~TextureMTL() {}
 
 void TextureMTL::updateSamplerDescriptor(const SamplerDescriptor& sampler)
 {
+    markSamplerDirty(sampler);
     _textureInfo.recreateSampler(sampler);
 }
 
@@ -223,6 +224,7 @@ void TextureMTL::updateTextureDescriptor(const ax::backend::TextureDescriptor& d
 
 void TextureMTL::updateData(uint8_t* data, std::size_t width, std::size_t height, std::size_t level, int index)
 {
+    markContentsDirty();
     updateSubData(0, 0, width, height, level, data, index);
 }
 
@@ -234,6 +236,7 @@ void TextureMTL::updateSubData(std::size_t xoffset,
                                uint8_t* data,
                                int index)
 {
+    markContentsDirty();
     auto mtlTexture = _textureInfo.ensure(index, MTL_TEXTURE_2D);
     if (!mtlTexture)
         return;
@@ -258,6 +261,7 @@ void TextureMTL::updateCompressedData(uint8_t* data,
                                       std::size_t level,
                                       int index)
 {
+    markContentsDirty();
     updateCompressedSubData(0, 0, width, height, dataLen, level, data, index);
 }
 
@@ -270,11 +274,13 @@ void TextureMTL::updateCompressedSubData(std::size_t xoffset,
                                          uint8_t* data,
                                          int index)
 {
+    markContentsDirty();
     updateSubData(xoffset, yoffset, width, height, level, data, index);
 }
 
 void TextureMTL::generateMipmaps()
 {
+    markContentsDirty();
     if (TextureUsage::RENDER_TARGET == _textureUsage || isColorRenderable(_textureFormat) == false)
         return;
 
@@ -308,11 +314,13 @@ void TextureCubeMTL::updateTextureDescriptor(const ax::backend::TextureDescripto
 
 void TextureCubeMTL::updateSamplerDescriptor(const SamplerDescriptor& sampler)
 {
+    markSamplerDirty(sampler);
     _textureInfo.recreateSampler(sampler);
 }
 
 void TextureCubeMTL::updateFaceData(TextureCubeFace side, void* data, int index)
 {
+    markContentsDirty();
     NSUInteger slice = static_cast<int>(side);
     auto mtlTexture  = _textureInfo.ensure(index, MTL_TEXTURE_CUBE);
     if (!mtlTexture)
@@ -328,6 +336,7 @@ void TextureCubeMTL::updateFaceData(TextureCubeFace side, void* data, int index)
 
 void TextureCubeMTL::generateMipmaps()
 {
+    markContentsDirty();
     if (TextureUsage::RENDER_TARGET == _textureUsage || isColorRenderable(_textureFormat) == false)
         return;
 

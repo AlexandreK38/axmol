@@ -187,12 +187,14 @@ Texture2DGL::~Texture2DGL()
 
 void Texture2DGL::updateSamplerDescriptor(const SamplerDescriptor& sampler)
 {
+    markSamplerDirty(sampler);
     bool isPow2 = ISPOW2(_width) && ISPOW2(_height);
     _textureInfo.applySampler(sampler, isPow2, _hasMipmaps, GL_TEXTURE_2D);
 }
 
 void Texture2DGL::updateData(uint8_t* data, std::size_t width, std::size_t height, std::size_t level, int index)
 {
+    markContentsDirty();
     if (!_textureInfo.ensure(index, GL_TEXTURE_2D))
         return;
 
@@ -249,6 +251,7 @@ void Texture2DGL::updateCompressedData(uint8_t* data,
                                        std::size_t level,
                                        int index)
 {
+    markContentsDirty();
     if (!_textureInfo.ensure(index, GL_TEXTURE_2D))
         return;
 
@@ -271,6 +274,7 @@ void Texture2DGL::updateSubData(std::size_t xoffset,
                                 uint8_t* data,
                                 int index)
 {
+    markContentsDirty();
     if (!_textureInfo.ensure(index, GL_TEXTURE_2D))
         return;
 
@@ -294,6 +298,7 @@ void Texture2DGL::updateCompressedSubData(std::size_t xoffset,
                                           uint8_t* data,
                                           int index)
 {
+    markContentsDirty();
     if (!_textureInfo.ensure(index, GL_TEXTURE_2D))
         return;
 
@@ -307,6 +312,7 @@ void Texture2DGL::updateCompressedSubData(std::size_t xoffset,
 
 void Texture2DGL::generateMipmaps()
 {
+    markContentsDirty();
     if (TextureUsage::RENDER_TARGET == _textureUsage)
         return;
 
@@ -357,11 +363,13 @@ TextureCubeGL::~TextureCubeGL()
 
 void TextureCubeGL::updateSamplerDescriptor(const SamplerDescriptor& sampler)
 {
+    markSamplerDirty(sampler);
     _textureInfo.applySampler(sampler, true, _hasMipmaps, GL_TEXTURE_CUBE_MAP);
 }
 
 void TextureCubeGL::updateFaceData(TextureCubeFace side, void* data, int index)
 {
+    markContentsDirty();
     if (!_textureInfo.ensure(index, GL_TEXTURE_CUBE_MAP))
         return;
 
@@ -379,6 +387,7 @@ void TextureCubeGL::updateFaceData(TextureCubeFace side, void* data, int index)
 
 void TextureCubeGL::generateMipmaps()
 {
+    markContentsDirty();
     if (TextureUsage::RENDER_TARGET == _textureUsage)
         return;
 

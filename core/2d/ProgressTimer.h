@@ -142,7 +142,7 @@ public:
      *    Set the rate to be Vec2(0,1); and set the midpoint to = Vec2(0,.5f).
      * @param barChangeRate A Vec2.
      */
-    void setBarChangeRate(const Vec2& barChangeRate) { _barChangeRate = barChangeRate; }
+    void setBarChangeRate(const Vec2& barChangeRate);
 
     /** Returns the BarChangeRate.
      *

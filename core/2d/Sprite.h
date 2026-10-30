@@ -354,7 +354,7 @@ public:
     /**
      * Makes the Sprite to be updated in the Atlas.
      */
-    virtual void setDirty(bool dirty) { _dirty = dirty; }
+    virtual void setDirty(bool dirty);
 
     /**
      */
@@ -513,7 +513,7 @@ public:
      *In lua: local setBlendFunc(local src, local dst).
      *@endcode
      */
-    void setBlendFunc(const BlendFunc& blendFunc) override { _blendFunc = blendFunc; }
+    void setBlendFunc(const BlendFunc& blendFunc) override;
     /**
      * @lua NA
      */
@@ -697,6 +697,8 @@ protected:
 
     // texture
     Rect _rect;                 /// Rectangle of Texture2D
+    bool _textureRectInitialized = false;
+    Vec2 _lastTextureRectOffset;
     bool _rectRotated = false;  /// Whether the texture is rotated
 
     Rect _centerRectNormalized = {0, 0, 1, 1};  /// Rectangle to implement "slice 9"

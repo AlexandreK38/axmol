@@ -135,9 +135,19 @@ public:
     AX_DEPRECATED(2.8) bool isOpenGLReady() { return isGfxContextReady(); }
 #endif
     virtual bool isGfxContextReady() = 0;
+    /** Returns whether the graphics context and drawable surface are ready. */
+    virtual bool isSurfaceReady() { return isGfxContextReady() && _screenSize.width > 0 && _screenSize.height > 0; }
 
     /** Exchanges the front and back buffers, subclass must implement this method. */
     virtual void swapBuffers() = 0;
+    /** Presents a frame. Override when the platform reports swap failure. */
+    virtual bool present()
+    {
+        swapBuffers();
+        return true;
+    }
+    /** Returns whether the platform acknowledges presentation separately, as in Android and UWP. */
+    virtual bool isPresentationDeferred() const { return false; }
 
     /** Open or close IME keyboard , subclass must implement this method.
      *

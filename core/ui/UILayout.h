@@ -465,6 +465,8 @@ public:
     virtual bool init() override;
 
 protected:
+    void requestLayoutUpdate();
+
     // override "onSizeChanged" method of widget.
     virtual void onSizeChanged() override;
 

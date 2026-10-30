@@ -24,6 +24,7 @@
  THE SOFTWARE.
  ****************************************************************************/
 
+#include "base/Director.h"
 #include "Particle3D/PU/PUParticleSystem3D.h"
 #include "Particle3D/PU/PUEmitter.h"
 #include "Particle3D/PU/PUEmitterManager.h"
@@ -476,6 +477,7 @@ void PUParticleSystem3D::update(float delta)
 
 void PUParticleSystem3D::forceUpdate(float delta)
 {
+    _director->requestRender(RenderReason::Geometry);
     if (!_emitters.empty())
         calulateRotationOffset();
 

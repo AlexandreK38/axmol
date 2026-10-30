@@ -217,6 +217,7 @@ list(APPEND GAME_HEADER
      Source/SpritePolygonTest/SpritePolygonTest.h
      Source/TexturePackerEncryptionTest/TextureAtlasEncryptionTest.h
      Source/NodeTest/NodeTest.h
+     Source/RenderDemandTest/RenderDemandTest.h
      Source/RenderTextureTest/RenderTextureTest.h
      Source/LayerTest/LayerTest.h
      Source/SpriteTest/SpriteTest.h
@@ -295,6 +296,7 @@ list(APPEND GAME_SOURCE
      Source/Particle3DTest/Particle3DTest.cpp
      Source/ParticleTest/ParticleTest.cpp
      Source/ReleasePoolTest/ReleasePoolTest.cpp
+     Source/RenderDemandTest/RenderDemandTest.cpp
      Source/RenderTextureTest/RenderTextureTest.cpp
      Source/RotateWorldTest/RotateWorldTest.cpp
      Source/SceneTest/SceneTest.cpp

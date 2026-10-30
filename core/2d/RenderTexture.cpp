@@ -47,6 +47,41 @@ THE SOFTWARE.
 namespace ax
 {
 
+void RenderTexture::setClearColor(const Color4F& clearColor)
+{
+    if (_clearColor != clearColor)
+        _director->requestRender(RenderReason::Offscreen);
+    _clearColor = clearColor;
+}
+
+void RenderTexture::setClearDepth(float clearDepth)
+{
+    if (_clearDepth != clearDepth)
+        _director->requestRender(RenderReason::Offscreen);
+    _clearDepth = clearDepth;
+}
+
+void RenderTexture::setClearStencil(int clearStencil)
+{
+    if (_clearStencil != clearStencil)
+        _director->requestRender(RenderReason::Offscreen);
+    _clearStencil = clearStencil;
+}
+
+void RenderTexture::setAutoDraw(bool isAutoDraw)
+{
+    if (_autoDraw != isAutoDraw)
+        _director->requestRender(RenderReason::Offscreen);
+    _autoDraw = isAutoDraw;
+}
+
+void RenderTexture::setKeepMatrix(bool keepMatrix)
+{
+    if (_keepMatrix != keepMatrix)
+        _director->requestRender(RenderReason::Offscreen);
+    _keepMatrix = keepMatrix;
+}
+
 // implementation RenderTexture
 RenderTexture::RenderTexture()
 {
@@ -707,11 +742,14 @@ void RenderTexture::end()
 
 void RenderTexture::setClearFlags(ClearFlag clearFlags)
 {
+    const auto previous = _clearFlags;
     _clearFlags = clearFlags;
     if (_clearFlags != ClearFlag::NONE && !_depthStencilTexture)
     {
         _clearFlags = ClearFlag::COLOR;
     }
+    if (previous != _clearFlags)
+        _director->requestRender(RenderReason::Offscreen);
 }
 
 void RenderTexture::clearColorAttachment()

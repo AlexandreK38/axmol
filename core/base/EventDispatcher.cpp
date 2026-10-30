@@ -963,6 +963,12 @@ void EventDispatcher::dispatchTouchEventToListeners(EventListenerVector* listene
 
 void EventDispatcher::dispatchEvent(Event* event, bool forced)
 {
+    if (event->getType() == Event::Type::CUSTOM)
+    {
+        const auto& name = static_cast<EventCustom*>(event)->getEventName();
+        if (name == EVENT_RENDERER_RECREATED || name == EVENT_COME_TO_FOREGROUND)
+            Director::getInstance()->requestRender(RenderReason::Surface);
+    }
     if (!_isEnabled && !forced)
         return;
 

@@ -409,7 +409,8 @@ void DriverMTL::setCAMetalLayer(CAMetalLayer* metalLayer)
 
 id<CAMetalDrawable> DriverMTL::getCurrentDrawable()
 {
-    if (!DriverMTL::_currentDrawable)
+    if (!DriverMTL::_currentDrawable && DriverMTL::_metalLayer.drawableSize.width > 0 &&
+        DriverMTL::_metalLayer.drawableSize.height > 0)
         DriverMTL::_currentDrawable = [DriverMTL::_metalLayer nextDrawable];
 
     return DriverMTL::_currentDrawable;

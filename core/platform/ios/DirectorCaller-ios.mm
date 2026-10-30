@@ -95,6 +95,7 @@ static __strong id s_sharedDirectorCaller;
     [self initLastDisplayTime];
 
     isAppActive = YES;
+    ax::Director::getInstance()->requestRender(ax::RenderReason::Surface);
 }
 
 - (void)appDidBecomeInactive

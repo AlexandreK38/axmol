@@ -1848,6 +1848,8 @@ public:
     bool initLayer();
 
 protected:
+    void requestTransformUpdate();
+
     /// lazy allocs
     void childrenAlloc();
 

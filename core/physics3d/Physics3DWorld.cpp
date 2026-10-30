@@ -26,6 +26,7 @@
 
 #include "physics3d/Physics3D.h"
 #include "renderer/Renderer.h"
+#include "base/Director.h"
 
 #if defined(AX_ENABLE_3D_PHYSICS)
 
@@ -112,6 +113,9 @@ bool Physics3DWorld::init(Physics3DWorldDes* info)
 
 void Physics3DWorld::setDebugDrawEnable(bool enableDebugDraw)
 {
+    if (isDebugDrawEnabled() == enableDebugDraw)
+        return;
+    Director::getInstance()->requestRender(RenderReason::Scene);
     if (enableDebugDraw && _btPhyiscsWorld->getDebugDrawer() == nullptr)
     {
         _debugDrawer = new Physics3DDebugDrawer();

@@ -59,6 +59,7 @@ public:
     bool isGfxContextReady() override;
     void end() override;
     void swapBuffers() override;
+    bool isPresentationDeferred() const override { return true; }
 
     Windows::Graphics::Display::DisplayOrientations getDeviceOrientation() { return m_orientation; };
     Size getRenerTargetSize() const { return Size(m_width, m_height); }
@@ -209,4 +210,3 @@ AX_DEPRECATED(2.8) typedef RenderViewImpl GLViewImpl;
 #endif
 
 }
-

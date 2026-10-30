@@ -299,6 +299,7 @@ void Animate3D::update(float t)
 {
     if (_target)
     {
+        Director::getInstance()->requestRender(RenderReason::Geometry);
         if (_state == Animate3D::Animate3DState::FadeIn && _lastTime > 0.f)
         {
             _accTransTime += (t - _lastTime) * getDuration();

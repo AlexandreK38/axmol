@@ -347,6 +347,7 @@ void ImGuiPresenter::init()
 
 void ImGuiPresenter::cleanup()
 {
+    _renderActivity.reset();
     auto eventDispatcher = Director::getInstance()->getEventDispatcher();
     eventDispatcher->removeCustomEventListeners(Director::EVENT_AFTER_VISIT);
     eventDispatcher->removeCustomEventListeners(Director::EVENT_BEFORE_DRAW);
@@ -526,12 +527,16 @@ void ImGuiPresenter::update()
         imLoop.func();  // invoke ImGui loop func
         ++iter;
     }
+    if (_renderLoops.empty())
+        _renderActivity.reset();
 
     // commands will be processed after update
 }
 
 bool ImGuiPresenter::addRenderLoop(std::string_view id, std::function<void()> func, Scene* target)
 {
+    if (!_renderActivity)
+        _renderActivity = Director::getInstance()->acquireRenderActivity();
 
     auto tracker = target ? static_cast<ImGuiEventTracker*>(utils::newInstance<ImGuiSceneEventTracker>(
                                 &ImGuiSceneEventTracker::initWithScene, target))

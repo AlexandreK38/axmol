@@ -22,14 +22,46 @@
  THE SOFTWARE.
  ****************************************************************************/
 
+#include "base/Director.h"
 #include "2d/Light.h"
 #include "2d/Scene.h"
 
 namespace ax
 {
 
+void BaseLight::setLightFlag(LightFlag flag)
+{
+    if (_lightFlag != flag)
+        _director->requestRender(RenderReason::Node);
+    _lightFlag = flag;
+}
+
+void BaseLight::setEnabled(bool enabled)
+{
+    if (_enabled != enabled)
+        _director->requestRender(RenderReason::Node);
+    _enabled = enabled;
+}
+
+void PointLight::setRange(float range)
+{
+    if (_range != range)
+        _director->requestRender(RenderReason::Node);
+    _range = range;
+}
+
+void SpotLight::setRange(float range)
+{
+    if (_range != range)
+        _director->requestRender(RenderReason::Node);
+    _range = range;
+}
+
 void BaseLight::setIntensity(float intensity)
 {
+    if (_intensity == intensity)
+        return;
+    _director->requestRender(RenderReason::Node);
     AX_ASSERT(intensity >= 0);
     _intensity = intensity;
 }
@@ -149,12 +181,18 @@ Vec3 SpotLight::getDirectionInWorld() const
 
 void SpotLight::setInnerAngle(float angle)
 {
+    if (_innerAngle == angle)
+        return;
+    _director->requestRender(RenderReason::Node);
     _innerAngle    = angle;
     _cosInnerAngle = cosf(angle);
 }
 
 void SpotLight::setOuterAngle(float angle)
 {
+    if (_outerAngle == angle)
+        return;
+    _director->requestRender(RenderReason::Node);
     _outerAngle    = angle;
     _cosOuterAngle = cosf(angle);
 }

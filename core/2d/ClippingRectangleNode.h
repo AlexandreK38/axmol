@@ -79,7 +79,7 @@ public:
     @brief Enable/Disable the clipping.
     @param enabled Pass true to enable clipping. Pass false to disable clipping.
     */
-    void setClippingEnabled(bool enabled) { _clippingEnabled = enabled; }
+    void setClippingEnabled(bool enabled);
 
     // virtual void draw(Renderer* renderer, const Mat4 &transform, uint32_t flags) override;
     virtual void visit(Renderer* renderer, const Mat4& parentTransform, uint32_t parentFlags) override;

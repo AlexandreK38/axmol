@@ -59,4 +59,30 @@ TEST_SUITE("2d/Node") {
         CHECK_EQ(200.0f, node.getPosition().x);
         CHECK_EQ(100.0f, node.getPosition().y);
     }
+    TEST_CASE("explicit transform is compared before applying the additional transform")
+    {
+        Node node;
+        Mat4 base;
+        Mat4 additional;
+        Mat4::createTranslation(10, 0, 0, &base);
+        Mat4::createTranslation(5, 0, 0, &additional);
+        node.setNodeToParentTransform(base);
+        node.setAdditionalTransform(additional);
+        CHECK(node.getNodeToParentTransform().m[12] == 15);
+
+        Mat4::createTranslation(15, 0, 0, &base);
+        node.setNodeToParentTransform(base);
+        CHECK(node.getNodeToParentTransform().m[12] == 20);
+        node.setNodeToParentTransform(base);
+        CHECK(node.getNodeToParentTransform().m[12] == 20);
+    }
+    TEST_CASE("setting the same quaternion clears independent rotation skew")
+    {
+        Node node;
+        node.setRotationSkewX(30);
+        const auto rotation = node.getRotationQuat();
+        node.setRotationQuat(rotation);
+        CHECK(node.getRotationSkewX() == doctest::Approx(0));
+        CHECK(node.getRotationSkewY() == doctest::Approx(0));
+    }
 }

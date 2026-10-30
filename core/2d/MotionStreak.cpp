@@ -263,6 +263,8 @@ bool MotionStreak::setProgramState(backend::ProgramState* programState, bool own
 
 void MotionStreak::setBlendFunc(const BlendFunc& blendFunc)
 {
+    if (_blendFunc != blendFunc)
+        _director->requestRender(RenderReason::Node);
     _blendFunc = blendFunc;
 }
 
@@ -294,6 +296,8 @@ void MotionStreak::update(float delta)
     if (!_startingPositionInitialized)
         return;
 
+    if (_nuPoints || _previousNuPoints)
+        _director->requestRender(RenderReason::Geometry);
     delta *= _fadeDelta;
 
     unsigned int newIdx, newIdx2, i, i2;
@@ -359,6 +363,7 @@ void MotionStreak::update(float delta)
 
     if (appendNewPoint)
     {
+        _director->requestRender(RenderReason::Geometry);
         _pointVertexes[_nuPoints] = _positionR;
         _pointState[_nuPoints]    = 1.0f;
 
@@ -406,6 +411,8 @@ void MotionStreak::update(float delta)
 
 void MotionStreak::reset()
 {
+    if (_nuPoints)
+        _director->requestRender(RenderReason::Geometry);
     _nuPoints = 0;
 }
 

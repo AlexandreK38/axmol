@@ -218,7 +218,7 @@ public abstract class AxmolActivity extends AppCompatActivity implements AxmolEn
         hideVirtualButton();
         AxmolEngine.onResume();
         mGLSurfaceView.handleOnResume();
-        mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+        mGLSurfaceView.resumeRendering();
     }
 
     @Override
@@ -226,7 +226,7 @@ public abstract class AxmolActivity extends AppCompatActivity implements AxmolEn
     	Log.i(TAG, "onPause()");
 
         AxmolEngine.onPause();
-        mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        mGLSurfaceView.pauseRendering();
         mGLSurfaceView.handleOnPause();
 
         super.onPause();

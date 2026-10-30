@@ -171,6 +171,7 @@ private:
     };
 
     std::unordered_map<uint32_t, ImGuiLoop> _renderLoops;
+    ax::RenderActivity _renderActivity;
 
     std::unordered_map<Object*, int> _objsRefIdMap;
     // cocos objects should be retained until next frame

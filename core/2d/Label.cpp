@@ -808,8 +808,8 @@ bool Label::setFontAtlas(FontAtlas* atlas, bool distanceFieldEnabled /* = false 
 
     if (_fontAtlas)
     {
-        _lineHeight      = _fontAtlas->getLineHeight();
-        _contentDirty    = true;
+        _lineHeight = _fontAtlas->getLineHeight();
+        requestContentUpdate();
         _systemFontDirty = false;
     }
     _useDistanceField = distanceFieldEnabled;
@@ -940,12 +940,18 @@ bool Label::setBMFontFilePath(std::string_view bmfontFilePath, const Vec2& image
     return setBMFontFilePath(bmfontFilePath, Rect(imageOffset.x, imageOffset.y, 0, 0), false);
 }
 #endif
+void Label::requestContentUpdate()
+{
+    _contentDirty = true;
+    _director->requestRender(RenderReason::Geometry);
+}
+
 void Label::setString(std::string_view text)
 {
     if (text.compare(_utf8Text))
     {
-        _utf8Text     = text;
-        _contentDirty = true;
+        _utf8Text = text;
+        requestContentUpdate();
 
         std::u32string utf32String;
         if (StringUtils::UTF8ToUTF32(_utf8Text, utf32String))
@@ -962,7 +968,7 @@ void Label::setAlignment(TextHAlignment hAlignment, TextVAlignment vAlignment)
         _hAlignment = hAlignment;
         _vAlignment = vAlignment;
 
-        _contentDirty = true;
+        requestContentUpdate();
     }
 }
 
@@ -971,7 +977,7 @@ void Label::setMaxLineWidth(float maxLineWidth)
     if (_labelWidth == 0 && _maxLineWidth != maxLineWidth)
     {
         _maxLineWidth = maxLineWidth;
-        _contentDirty = true;
+        requestContentUpdate();
     }
 }
 
@@ -989,7 +995,7 @@ void Label::setDimensions(float width, float height)
         _labelDimensions.height = height;
 
         _maxLineWidth = width;
-        _contentDirty = true;
+        requestContentUpdate();
 
         if (_overflow == Overflow::SHRINK)
         {
@@ -1024,7 +1030,7 @@ void Label::setLineBreakWithoutSpace(bool breakWithoutSpace)
     if (breakWithoutSpace != _lineBreakWithoutSpaces)
     {
         _lineBreakWithoutSpaces = breakWithoutSpace;
-        _contentDirty           = true;
+        requestContentUpdate();
     }
 }
 
@@ -1338,6 +1344,7 @@ bool Label::updateTTFConfigInternal(unsigned int mods)
      */
     if (!atlasUpdated && mods && _fontConfig.distanceFieldEnabled)
         _contentDirty = true;
+    _director->requestRender(RenderReason::Geometry);
 
     if (_fontConfig.outlineSize > 0)
     {
@@ -1378,7 +1385,7 @@ void Label::setBMFontSizeInternal(float fontSize)
         {
             this->setBMFontFilePath(_bmFontPath, _bmRect, _bmRotated, fontSize);
         }
-        _contentDirty = true;
+        requestContentUpdate();
     }
 }
 
@@ -1431,7 +1438,7 @@ void Label::enableGlow(const Color4B& glowColor, float glowRadius)
         if (mods)
         {
             setTTFConfig(config);
-            _contentDirty = true;
+            requestContentUpdate();
             updateShaderProgram();
         }
         _currLabelEffect = LabelEffect::GLOW;
@@ -1476,7 +1483,7 @@ void Label::enableOutline(const Color4B& outlineColor, float outlineSize /* = -1
             _effectColorF.b  = outlineColor.b / 255.f;
             _effectColorF.a  = outlineColor.a / 255.f;
             _currLabelEffect = LabelEffect::OUTLINE;
-            _contentDirty    = true;
+            requestContentUpdate();
         }
         _outlineSize = outlineSize;
     }
@@ -1488,6 +1495,7 @@ void Label::enableShadow(const Color4B& shadowColor /* = Color4B::BLACK */,
 {
     _shadowEnabled = true;
     _shadowDirty   = true;
+    _director->requestRender(RenderReason::Geometry);
 
     _shadowOffset.width  = offset.width;
     _shadowOffset.height = offset.height;
@@ -1555,7 +1563,7 @@ void Label::enableUnderline()
         return;
     }
     _underlineEnabled = true;
-    _contentDirty     = true;
+    requestContentUpdate();
     if (!_lineDrawNode)
     {
         _lineDrawNode = DrawNode::create();
@@ -1574,7 +1582,7 @@ void Label::enableStrikethrough()
         return;
     }
     _strikethroughEnabled = true;
-    _contentDirty         = true;
+    requestContentUpdate();
     if (!_lineDrawNode)
     {
         _lineDrawNode = DrawNode::create();
@@ -1606,7 +1614,7 @@ void Label::disableEffect(LabelEffect effect)
                 setTTFConfig(_fontConfig);
             }
             _currLabelEffect = LabelEffect::NORMAL;
-            _contentDirty    = true;
+            requestContentUpdate();
         }
         break;
     case ax::LabelEffect::SHADOW:
@@ -1648,7 +1656,7 @@ void Label::disableEffect(LabelEffect effect)
             removeChild(_lineDrawNode);
             _lineDrawNode = nullptr;
         }
-        _contentDirty = true;
+        requestContentUpdate();
         break;
     case ax::LabelEffect::STRIKETHROUGH:
         _strikethroughEnabled = false;
@@ -1662,7 +1670,7 @@ void Label::disableEffect(LabelEffect effect)
             removeChild(_lineDrawNode);
             _lineDrawNode = nullptr;
         }
-        _contentDirty = true;
+        requestContentUpdate();
         break;
     case LabelEffect::ALL:
     {
@@ -2320,6 +2328,7 @@ void Label::setSystemFontName(std::string_view systemFont)
         _systemFont       = systemFont;
         _currentLabelType = LabelType::STRING_TEXTURE;
         _systemFontDirty  = true;
+        _director->requestRender(RenderReason::Geometry);
     }
 }
 
@@ -2331,6 +2340,7 @@ void Label::setSystemFontSize(float fontSize)
         _originalFontSize = fontSize;
         _currentLabelType = LabelType::STRING_TEXTURE;
         _systemFontDirty  = true;
+        _director->requestRender(RenderReason::Geometry);
     }
 }
 
@@ -2408,8 +2418,8 @@ void Label::setLineHeight(float height)
 
     if (_lineHeight != height)
     {
-        _lineHeight   = height;
-        _contentDirty = true;
+        _lineHeight = height;
+        requestContentUpdate();
     }
 }
 
@@ -2423,8 +2433,8 @@ void Label::setLineSpacing(float height)
 {
     if (_lineSpacing != height)
     {
-        _lineSpacing  = height;
-        _contentDirty = true;
+        _lineSpacing = height;
+        requestContentUpdate();
     }
 }
 
@@ -2441,7 +2451,7 @@ void Label::setAdditionalKerning(float space)
         if (_additionalKerning != space)
         {
             _additionalKerning = space;
-            _contentDirty      = true;
+            requestContentUpdate();
         }
     }
     else
@@ -2530,7 +2540,7 @@ void Label::updateDisplayedColor(const Color3B& parentColor)
         // which makes it super expensive to change update it frequently
         // Correct solution is to update the DrawNode directly since we know it is
         // a line. Returning a pointer to the line is an option
-        _contentDirty = true;
+        requestContentUpdate();
     }
 
     for (auto&& it : _letters)
@@ -2560,7 +2570,7 @@ void Label::updateDisplayedOpacity(uint8_t parentOpacity)
     if (_lineDrawNode)
     {
         _lineDrawNode->setOpacity(_displayedOpacity);
-        _contentDirty = true;
+        requestContentUpdate();
     }
 }
 
@@ -2576,7 +2586,7 @@ void Label::setTextColor(const Color4B& color)
         case LabelType::STRING_TEXTURE:
         case LabelType::BMFONT:
         case LabelType::TTF:
-            _contentDirty = true;
+            requestContentUpdate();
             break;
         }
     }
@@ -2658,6 +2668,7 @@ void Label::setBlendFunc(const BlendFunc& blendFunc)
 {
     _blendFunc      = blendFunc;
     _blendFuncDirty = true;
+    _director->requestRender(RenderReason::Geometry);
     if (_textSprite)
     {
         _textSprite->setBlendFunc(blendFunc);
@@ -2789,7 +2800,7 @@ void Label::enableWrap(bool enable)
 
     this->rescaleWithOriginalFontSize();
 
-    _contentDirty = true;
+    requestContentUpdate();
 }
 
 bool Label::isWrapEnabled() const
@@ -2821,7 +2832,7 @@ void Label::setOverflow(Overflow overflow)
 
     this->rescaleWithOriginalFontSize();
 
-    _contentDirty = true;
+    requestContentUpdate();
 }
 
 void Label::rescaleWithOriginalFontSize()

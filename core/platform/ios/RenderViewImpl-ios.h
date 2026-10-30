@@ -89,6 +89,7 @@ public:
     bool isGfxContextReady() override;
     void end() override;
     void swapBuffers() override;
+    bool present() override;
     void setIMEKeyboardState(bool bOpen) override;
 
     Rect getSafeAreaRect() const override;
